@@ -1,0 +1,821 @@
+{
+  "url": "https://v.wjx.cn/vm/PAmhbrG.aspx?code=001KAR1w3dtos73VNy0w3QwzKg4KAR1S&state=sojump",
+  "activity_id": "PAmhbrG",
+  "platform": "wjx",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "radio",
+      "label": "*1.您的年龄阶段？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q2",
+      "type": "radio",
+      "label": "*2.您的文化程度？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q3",
+      "type": "select",
+      "label": "*3.您家共有几口人？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": "select[name=\"q{id}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q4",
+      "type": "radio",
+      "label": "*4.您家宅基地面积大约为？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q5",
+      "type": "radio",
+      "label": "*5.您家现有住房的结构类型？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q6",
+      "type": "radio",
+      "label": "*6.您家住房的建成年份？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q7",
+      "type": "checkbox",
+      "label": "*7.您家宅基地目前的主要用途是什么？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq7_7"
+      }
+    },
+    {
+      "id": "q8",
+      "type": "radio",
+      "label": "*8.您家是否有闲置宅基地或闲置房屋？",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q9",
+      "type": "checkbox",
+      "label": "*9.闲置的主要原因是什么？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq9_6"
+      }
+    },
+    {
+      "id": "q10_0",
+      "type": "matrix",
+      "label": "宅基地面积",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q10_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q10"
+      }
+    },
+    {
+      "id": "q10_1",
+      "type": "matrix",
+      "label": "房屋质量",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q10_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q10"
+      }
+    },
+    {
+      "id": "q10_2",
+      "type": "matrix",
+      "label": "居住环境",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q10_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q10"
+      }
+    },
+    {
+      "id": "q10_3",
+      "type": "matrix",
+      "label": "交通便利度",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q10_3']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q10"
+      }
+    },
+    {
+      "id": "q10_4",
+      "type": "matrix",
+      "label": "基础设施配套",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q10_4']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q10"
+      }
+    },
+    {
+      "id": "q11",
+      "type": "radio",
+      "label": "*10.您是否有意愿将闲置宅基地或多余房屋进行流转或出租？",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q12",
+      "type": "checkbox",
+      "label": "*12.若有意愿，您希望通过什么方式流转？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq12_6"
+      }
+    },
+    {
+      "id": "q13",
+      "type": "checkbox",
+      "label": "*11.您认为目前农村宅基地利用存在的主要问题有哪些？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq13_8"
+      }
+    },
+    {
+      "id": "q14",
+      "type": "rating",
+      "label": "*12.您对宅基地“三权分置”（所有权、资格权、使用权）政策的了解程度？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q15",
+      "type": "checkbox",
+      "label": "*13.您了解宅基地相关政策的渠道有哪些？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq15_7"
+      }
+    },
+    {
+      "id": "q16",
+      "type": "radio",
+      "label": "*14.您家是否已经领取宅基地不动产权证书（确权登记）？",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q17_0",
+      "type": "matrix",
+      "label": "允许宅基地在村集体内部流转",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q17_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q17"
+      }
+    },
+    {
+      "id": "q17_1",
+      "type": "matrix",
+      "label": "鼓励有偿退出闲置宅基地",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q17_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q17"
+      }
+    },
+    {
+      "id": "q17_2",
+      "type": "matrix",
+      "label": "允许利用宅基地发展乡村旅游等产业",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q17_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q17"
+      }
+    },
+    {
+      "id": "q17_3",
+      "type": "matrix",
+      "label": "严格宅基地审批和面积管控",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q17_3']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q17"
+      }
+    },
+    {
+      "id": "q17_4",
+      "type": "matrix",
+      "label": "建立宅基地流转信息平台",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q17_4']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q17"
+      }
+    },
+    {
+      "id": "q18",
+      "type": "radio",
+      "label": "*16.您家未来5年内是否有新建或翻建住房的计划？",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "radio",
+      "label": "*17.您认为当前村里宅基地管理中最需要解决的问题是什么？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q20",
+      "type": "textarea",
+      "label": "*18.您对农村宅基地利用和管理还有哪些意见或建议？",
+      "options": [],
+      "selector": {
+        "template": "textarea#q{id}",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": [],
+          "optional_rate": 0.2
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 28,
+    "identified_types": {
+      "radio": 10,
+      "select": 1,
+      "checkbox": 5,
+      "matrix": 10,
+      "rating": 1,
+      "textarea": 1
+    }
+  }
+}

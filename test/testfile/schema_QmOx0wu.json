@@ -1,0 +1,1050 @@
+{
+  "url": "https://v.wjx.cn/vm/QmOx0wu.aspx",
+  "activity_id": "QmOx0wu",
+  "platform": "wjx",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "radio",
+      "label": "*1.您的性别:",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q2",
+      "type": "radio",
+      "label": "*2.您的年龄:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q3",
+      "type": "radio",
+      "label": "*3.您的族别",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q4",
+      "type": "radio",
+      "label": "*4.您的职业:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q5",
+      "type": "radio",
+      "label": "*5.您的学历:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q6",
+      "type": "radio",
+      "label": "*6.您的月收入为:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q7",
+      "type": "radio",
+      "label": "*7.您在本地居住的时长:",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q8",
+      "type": "checkbox",
+      "label": "*8.您主要通过下列哪些渠道了解获取政府信息及服务?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q9",
+      "type": "checkbox",
+      "label": "*9.您办理事项可以通过以下哪种方式完成?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q10",
+      "type": "radio",
+      "label": "*10.请问您是跑了几次才将事情办好的?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q11",
+      "type": "checkbox",
+      "label": "*11.您认为您多跑腿的原因是?【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q12",
+      "type": "rating",
+      "label": "*1.线上平台（网站/APP/小程序）能够方便地找到并进入【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q13",
+      "type": "rating",
+      "label": "*2.线下服务网点（大厅/自助终端）布局合理，就近可达【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q14",
+      "type": "rating",
+      "label": "*3.少数民族语言服务能满足使用需求【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q15",
+      "type": "rating",
+      "label": "*4.服务覆盖了个人和企业常见事项，能满足我的主要需求【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q16",
+      "type": "rating",
+      "label": "*5. 线上渠道和线下渠道均可获取服务，选择多样【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q17",
+      "type": "rating",
+      "label": "*6.办事流程简洁，材料一次提交后多次复用【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q18",
+      "type": "rating",
+      "label": "*7.线上申请后，线下窗口“最多跑一次”能实现【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "rating",
+      "label": "*8.跨区域（异地）办理业务渠道畅通，无需来回奔波【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q20",
+      "type": "rating",
+      "label": "*9.事项办理的总体耗时较短，能一次性办成【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q21",
+      "type": "rating",
+      "label": "*10.移动端（APP/小程序）与PC端功能同步，信息更新一致【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q22",
+      "type": "rating",
+      "label": "*11.办事指南（材料清单、流程、时限）描述清晰、准确完整【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q23",
+      "type": "rating",
+      "label": "*12.系统操作提示（如错误修正、智能预填）有效易懂【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q24",
+      "type": "rating",
+      "label": "*13.平台稳定性好，响应速度快，很少出现卡顿或崩溃【5：非常满意4：满意3：基本满意2：不满意1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q25",
+      "type": "rating",
+      "label": "*14.服务人员（线上客服或线下窗口）业务熟练，能高效解决问题【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q26",
+      "type": "rating",
+      "label": "*15. 服务人员沟通态度友好，能耐心解答复杂或个性化问题【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q27",
+      "type": "rating",
+      "label": "*16.办理进度可实时查询，且查询结果准确【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q28",
+      "type": "rating",
+      "label": "*17.投诉建议渠道畅通，反馈后能在承诺时限内得到实质性解决【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q29",
+      "type": "rating",
+      "label": "*18.政府对公众意见征集（如流程改进建议）积极回应并采纳【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q30",
+      "type": "rating",
+      "label": "*19.既往我反映的问题，后续有明显改进效果【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q31",
+      "type": "rating",
+      "label": "*20.线上办理失败时，能快速通过其他渠道（电话/窗口）获得补救【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q32",
+      "type": "rating",
+      "label": "*21.平台提供主动提醒（如证照到期、办理节点）等增值服务【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q33",
+      "type": "rating",
+      "label": "*22.少数民族语言专属服务（如双语指引、专窗）超出基本需求【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q34",
+      "type": "rating",
+      "label": "*23智能客服（AI助手）能解决常见问题，节省时间【5：非常满意 4：满意 3：基本满意 2：不满意 1：非常不满意】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": "a.rate-off[val=\"{value}\"]",
+        "container": "#div{id}",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.02,
+            0.05,
+            0.15,
+            0.38,
+            0.4
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 34,
+    "identified_types": {
+      "radio": 8,
+      "checkbox": 3,
+      "rating": 23
+    }
+  }
+}

@@ -1,0 +1,1308 @@
+{
+  "url": "https://ks.wjx.com/vm/rsRj1YB.aspx",
+  "activity_id": "rsRj1YB",
+  "platform": "unknown",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "text",
+      "label": "编号：",
+      "options": [],
+      "selector": {
+        "template": "#q{id}",
+        "container": null,
+        "special_handling": "use_js_setvalue"
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": []
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q2",
+      "type": "radio",
+      "label": "*1. 您的性别:",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q3",
+      "type": "radio",
+      "label": "*2. 您的年龄:",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q4",
+      "type": "radio",
+      "label": "*3. 您的文化程度:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q5",
+      "type": "radio",
+      "label": "*4. 您的职业:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125,
+            0.125
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q6",
+      "type": "radio",
+      "label": "*5. 您的婚姻状况:",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q7",
+      "type": "radio",
+      "label": "*6. 您的个人年收入（税后）",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q8",
+      "type": "text",
+      "label": "*7.您的常住地所在省份城市与地区:",
+      "options": [],
+      "selector": {
+        "template": "#q{id}",
+        "container": null,
+        "special_handling": "use_js_setvalue"
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": []
+        }
+      },
+      "required": true,
+      "metadata": {
+        "readonly": true
+      }
+    },
+    {
+      "id": "q9",
+      "type": "radio",
+      "label": "*8. 您的常住地类型",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q10",
+      "type": "radio",
+      "label": "*9.请您自评自身应急救护知识掌握程度（  ）",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q11",
+      "type": "radio",
+      "label": "*10. 关于心脏骤停的黄金抢救时长，说法正确的是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q12",
+      "type": "radio",
+      "label": "*11. 成人标准胸外按压深度，正确数值是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q13",
+      "type": "radio",
+      "label": "*12.关于AED（自动体外除颤器）的正确使用步骤，下列排序正确的是？关于AED（自动体外除颤器）的正确使用步骤，下列排序正确的是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q14",
+      "type": "radio",
+      "label": "*13. 发生轻度烧伤/烫伤，现场标准处置流程正确的是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q15",
+      "type": "radio",
+      "label": "*14. 四肢外伤喷射性大出血，现场止血包扎正确操作是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q16",
+      "type": "radio",
+      "label": "*15. 骨折伤员安全搬运，注意事项说法正确的是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q17",
+      "type": "radio",
+      "label": "*16.出现严重中暑时，正确的现场急救做法是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q18",
+      "type": "radio",
+      "label": "*17.下列关于轻微鼻出血现场急救处理的方法中，正确的是（ ）",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "radio",
+      "label": "*18. 发现有人触电昏迷，第一步正确操作是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q20",
+      "type": "radio",
+      "label": "*19. 淹溺患者现场急救，做法正确的是",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q21",
+      "type": "radio",
+      "label": "*20.您是否了解台风、洪涝、山体滑坡等常见自然灾害的应急处置方法？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q22",
+      "type": "radio",
+      "label": "*21.关于意外伤害的现场急救，下列做法正确的是（ ）",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q23",
+      "type": "radio",
+      "label": "*22.学习急救技能是居民必备技能，有必要普及",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q24",
+      "type": "radio",
+      "label": "*23.公共场所、村口、卫生室应配备AED与急救箱",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q25",
+      "type": "radio",
+      "label": "*24.村/社区应定期组织免费应急救护实操培训",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q26",
+      "type": "radio",
+      "label": "*25.学校应常规开设应急救护教学课程",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q27",
+      "type": "radio",
+      "label": "*26.我愿意参加免费的应急救护技能培训",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q28",
+      "type": "checkbox",
+      "label": "*27.近三年，您通过哪些途径参加应急救护相关培训？（可多选）：【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq28_7",
+        "other_text_7": "tqq28_7"
+      }
+    },
+    {
+      "id": "tqq28_7",
+      "type": "text",
+      "label": "*27.近三年，您通过哪些途径参加应急救护相关培训？（可多选）：【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq28_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q28",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q29",
+      "type": "radio",
+      "label": "*28.遇到他人突发伤病、意外事故时，您的第一反应是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q30",
+      "type": "checkbox",
+      "label": "*29.若您不愿对陌生人实施救治措施，主要顾虑有哪些？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q31",
+      "type": "radio",
+      "label": "*30.您（或亲友）是否经历（参与或看到）过身边的院前急救（含蛇咬伤、中毒、溺水和医疗急救等）的场景",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q32",
+      "type": "checkbox",
+      "label": "*31.您最需要学习掌握哪些应急救护知识技能？（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq32_7",
+        "other_text_7": "tqq32_7"
+      }
+    },
+    {
+      "id": "tqq32_7",
+      "type": "text",
+      "label": "*31.您最需要学习掌握哪些应急救护知识技能？（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq32_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q32",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q33",
+      "type": "checkbox",
+      "label": "*32.您认为所在村/社区最需要完善的应急救护服务是？（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q34",
+      "type": "radio",
+      "label": "*33.您获取应急救护知识的渠道是否畅通、便捷？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q35",
+      "type": "radio",
+      "label": "*34.您目前是否持有应急救护相关证书（如红十字救护证、急救志愿者证等）？",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q36",
+      "type": "radio",
+      "label": "*35.您是否有意愿考取应急救护相关证书（如红十字救护证等）？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q37",
+      "type": "checkbox",
+      "label": "*36.您偏好的应急救护培训形式是？（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q38",
+      "type": "radio",
+      "label": "*37.您所在的村/社区是否布设急救箱、AED（自动体外除颤仪）、急救包等应急救护设备？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q39",
+      "type": "radio",
+      "label": "*38.您所在村/社区是否常态化开展应急救护科普、培训、演练活动？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q40",
+      "type": "radio",
+      "label": "*39.您所在村/社区是否有固定的应急救护志愿服务队伍或专职工作人员？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q41",
+      "type": "radio",
+      "label": "*40.您认为当前应急救护保障和培训资源在城乡之间的分配是否均衡？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q42",
+      "type": "radio",
+      "label": "*41.您所在的村/社区是否有急救站点？",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q43",
+      "type": "radio",
+      "label": "*42.呼叫急救车辆大约多少时间能够抵达?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 45,
+    "identified_types": {
+      "text": 4,
+      "radio": 36,
+      "checkbox": 5
+    }
+  }
+}

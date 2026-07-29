@@ -1,0 +1,631 @@
+{
+  "url": "https://v.wjx.cn/vm/mbskTjX.aspx",
+  "activity_id": "mbskTjX",
+  "platform": "wjx",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "radio",
+      "label": "*1.【单选】 您日常生活中最常使用的交流语言是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q2",
+      "type": "radio",
+      "label": "*2.【单选】 您在日常生活、生产劳作、乡村公共办事中使用普通话的频率为？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q3",
+      "type": "radio",
+      "label": "*3.【单选】 您日常使用普通话最主要用于哪类场景？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q4",
+      "type": "radio",
+      "label": "*4.【单选】 您的普通话掌握程度如何？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q5",
+      "type": "radio",
+      "label": "*5.【单选】 对接外来游客或线上售卖农产品时，您的普通话沟通能力如何？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q6",
+      "type": "radio",
+      "label": "*6.【单选】 发展乡村电商、文旅产业后，您学习普通话的意愿变化是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q7",
+      "type": "radio",
+      "label": "*7.【单选】 您学习普通话最主要的目的是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q8",
+      "type": "radio",
+      "label": "*8.【单选】 您认为当地村民学习普通话最大的阻碍是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q9",
+      "type": "radio",
+      "label": "*9.【单选】 在乡村振兴战略推进过程中，少数民族聚居地推广普通话的核心首要目标是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q10",
+      "type": "radio",
+      "label": "*10.【单选】 乡村振兴背景下，您最认可哪种普通话推广形式？",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q11",
+      "type": "radio",
+      "label": "*11.【单选】 当地面向少数民族群众开展普通话培训，最受欢迎的授课形式是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q12",
+      "type": "checkbox",
+      "label": "*12.【多选】 您认为当前推广普通话面临的主要困难有哪些？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q13",
+      "type": "checkbox",
+      "label": "*13.【多选】 少数民族乡村学生普通话学习存在哪些短板？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q14",
+      "type": "checkbox",
+      "label": "*14.【多选】 乡村振兴阶段，少数民族聚居地普通话推广存在哪些现实困境？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q15",
+      "type": "checkbox",
+      "label": "*15.【多选】 您认为完善当地普通话推广工作可采取哪些有效方式？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q16",
+      "type": "checkbox",
+      "label": "*16.【多选】 下列属于少数民族聚居地普通话可持续推广发展路径的有？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q17",
+      "type": "checkbox",
+      "label": "*17.【多选】 结合乡村振兴发展需求，您认为推广普通话最需要优化完善的方面是？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q18",
+      "type": "checkbox",
+      "label": "*18.【多选】 您认为当前普通话推广效果未达预期的主要原因是？（）【请选择2项,已选择0项】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "checkbox",
+      "label": "*19.【多选】 您认为普及普通话对乡村振兴的帮助体现在哪些方面？【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q20",
+      "type": "text",
+      "label": "*20.【开放题】 为了既能推广普通话，又能保护少数民族文化，您认为当地学校或社区可以采取哪些有趣又有效的活动形式？",
+      "options": [],
+      "selector": {
+        "template": "#q{id}",
+        "container": null,
+        "special_handling": "use_js_setvalue"
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": []
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q21",
+      "type": "text",
+      "label": "*21.【开放题】 您觉得在\"三月三\"等民族节日里，用普通话介绍本民族文化，年轻人会更愿意听吗？",
+      "options": [],
+      "selector": {
+        "template": "#q{id}",
+        "container": null,
+        "special_handling": "use_js_setvalue"
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": []
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q22",
+      "type": "radio",
+      "label": "*22.【单选】给您发放文卷的是",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667,
+            0.06666666666666667
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 22,
+    "identified_types": {
+      "radio": 12,
+      "checkbox": 8,
+      "text": 2
+    }
+  }
+}

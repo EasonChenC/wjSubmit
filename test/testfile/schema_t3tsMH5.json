@@ -1,0 +1,2614 @@
+{
+  "url": "https://v.wjx.cn/vm/t3tsMH5.aspx",
+  "activity_id": "t3tsMH5",
+  "platform": "wjx",
+  "questions": [
+    {
+      "id": "q1_1",
+      "type": "text",
+      "label": "调查地点:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q1_1'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q1",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q1_2",
+      "type": "text",
+      "label": "调查地点:市",
+      "options": [],
+      "selector": {
+        "template": "input[id='q1_2'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q1",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q1_3",
+      "type": "text",
+      "label": "调查地点:市县（区）",
+      "options": [],
+      "selector": {
+        "template": "input[id='q1_3'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q1",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q1_4",
+      "type": "text",
+      "label": "调查地点:市县（区）镇（乡）",
+      "options": [],
+      "selector": {
+        "template": "input[id='q1_4'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q1",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q2",
+      "type": "radio",
+      "label": "*1.您的性别:",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q3",
+      "type": "text",
+      "label": "您的年龄:岁*",
+      "options": [],
+      "selector": {
+        "template": "#div3 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "3",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q4",
+      "type": "radio",
+      "label": "*3.您的婚姻状况:",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q5",
+      "type": "radio",
+      "label": "*4.您的受教育程度:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q6",
+      "type": "radio",
+      "label": "*5.您的政治面貌:",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q7",
+      "type": "radio",
+      "label": "*6.您是否担任村干部或村民代表?",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q8",
+      "type": "radio",
+      "label": "*7.您的身体健康状况如何?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q9",
+      "type": "checkbox",
+      "label": "*8.您的主要生计来源（可多选）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq9_8",
+        "other_text_8": "tqq9_8"
+      }
+    },
+    {
+      "id": "tqq9_8",
+      "type": "text",
+      "label": "*8.您的主要生计来源（可多选）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq9_8",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q9",
+        "parent_option": 8,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q10",
+      "type": "text",
+      "label": "您家庭总人口数:人*",
+      "options": [],
+      "selector": {
+        "template": "#div10 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "10",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q11",
+      "type": "text",
+      "label": "您家庭劳动力人数（18-65岁，有劳动能力）:人*",
+      "options": [],
+      "selector": {
+        "template": "#div11 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "11",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q12",
+      "type": "text",
+      "label": "您家庭承包的耕地面积:亩*",
+      "options": [],
+      "selector": {
+        "template": "#div12 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "12",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q13",
+      "type": "text",
+      "label": "您家庭承包/经营的林地面积:亩*",
+      "options": [],
+      "selector": {
+        "template": "#div13 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "13",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q14",
+      "type": "text",
+      "label": "您家距离最近的自然教育基地/保护地的距离:公里*",
+      "options": [],
+      "selector": {
+        "template": "#div14 span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable"
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 1,
+          "max": 100
+        }
+      },
+      "required": true,
+      "metadata": {
+        "topic_num": "14",
+        "contenteditable": true
+      }
+    },
+    {
+      "id": "q15",
+      "type": "radio",
+      "label": "*14.您家庭2025年总收入约为:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q16_1",
+      "type": "text",
+      "label": "大致金额（单位:元/年）:农业种植收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_1'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_2",
+      "type": "text",
+      "label": "植收入:元;林业收入（木材、林产品等）:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_2'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_3",
+      "type": "text",
+      "label": "收入（木材、林产品等）:元;畜牧业收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_3'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_4",
+      "type": "text",
+      "label": "元;畜牧业收入:元;本地务工/经商收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_4'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_5",
+      "type": "text",
+      "label": ";本地务工/经商收入:元;外出务工收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_5'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_6",
+      "type": "text",
+      "label": "教育相关服务收入（导游、讲解、食宿等）:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_6'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_7",
+      "type": "text",
+      "label": "讲解、食宿等）:元;生态补偿/补贴收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_7'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q16_8",
+      "type": "text",
+      "label": ":元;生态补偿/补贴收入:元;其他收入:",
+      "options": [],
+      "selector": {
+        "template": "input[id='q16_8'] ~ label span.textCont[contenteditable='true']",
+        "container": null,
+        "special_handling": "contenteditable_with_id"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q16",
+        "sub_input": true,
+        "contenteditable_input": true
+      }
+    },
+    {
+      "id": "q17",
+      "type": "radio",
+      "label": "*16.与五年前相比，您家庭收入变化情况:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q18",
+      "type": "radio",
+      "label": "*17.您家庭目前是否有负债?",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "checkbox",
+      "label": "*18.您家庭的主要支出项目为（可多选，）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq19_7",
+        "other_text_7": "tqq19_7"
+      }
+    },
+    {
+      "id": "tqq19_7",
+      "type": "text",
+      "label": "*18.您家庭的主要支出项目为（可多选，）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq19_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q19",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q20",
+      "type": "radio",
+      "label": "*19.家庭劳动力中，是否有人具有自然导赏/环境教育/生态旅游相关培训经历?",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q21",
+      "type": "radio",
+      "label": "*20. 在本次调查之前，您是否听说过“自然教育”这一概念?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q22",
+      "type": "checkbox",
+      "label": "*21.您主要通过什么渠道了解自然教育相关信息?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq22_6",
+        "other_text_6": "tqq22_6"
+      }
+    },
+    {
+      "id": "tqq22_6",
+      "type": "text",
+      "label": "*21.您主要通过什么渠道了解自然教育相关信息?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq22_6",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q22",
+        "parent_option": 6,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q23",
+      "type": "checkbox",
+      "label": "*22. 您认为自然教育主要目的是什么?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq23_7",
+        "other_text_7": "tqq23_7"
+      }
+    },
+    {
+      "id": "tqq23_7",
+      "type": "text",
+      "label": "*22. 您认为自然教育主要目的是什么?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq23_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q23",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q24",
+      "type": "radio",
+      "label": "*23.您对本地自然资源的了解程度如何?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q25",
+      "type": "radio",
+      "label": "*24.您是否认为保护当地自然资源是您的责任?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q26",
+      "type": "checkbox",
+      "label": "*25.您是否了解本地有哪些自然教育基地或相关活动项目?【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q27",
+      "type": "radio",
+      "label": "*26.您身边的人（邻居/亲友）参与自然教育的情况是?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q28",
+      "type": "checkbox",
+      "label": "*27.您认为自然教育对本地社区的发展有何影响?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq28_7",
+        "other_text_7": "tqq28_7"
+      }
+    },
+    {
+      "id": "tqq28_7",
+      "type": "text",
+      "label": "*27.您认为自然教育对本地社区的发展有何影响?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq28_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q28",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q29",
+      "type": "checkbox",
+      "label": "*28.您认为本村/社区在自然教育方面存在的主要问题是什么?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq29_7",
+        "other_text_7": "tqq29_7"
+      }
+    },
+    {
+      "id": "tqq29_7",
+      "type": "text",
+      "label": "*28.您认为本村/社区在自然教育方面存在的主要问题是什么?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq29_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q29",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q30",
+      "type": "radio",
+      "label": "*29.过去三年，您是否参加过本地组织的自然教育活动?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q31",
+      "type": "checkbox",
+      "label": "*30.您参加过的自然教育活动类型有（可多选）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq31_6",
+        "other_text_6": "tqq31_6"
+      }
+    },
+    {
+      "id": "tqq31_6",
+      "type": "text",
+      "label": "*30.您参加过的自然教育活动类型有（可多选）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq31_6",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q31",
+        "parent_option": 6,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q32",
+      "type": "checkbox",
+      "label": "*31. 您在自然教育活动中的角色主要是（可多选）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq32_7",
+        "other_text_7": "tqq32_7"
+      }
+    },
+    {
+      "id": "tqq32_7",
+      "type": "text",
+      "label": "*31. 您在自然教育活动中的角色主要是（可多选）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq32_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q32",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q33",
+      "type": "radio",
+      "label": "*32.您参与自然教育活动的频率:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q34",
+      "type": "checkbox",
+      "label": "*33.您参与自然教育活动的主要动机是（可多选，）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq34_8",
+        "other_text_8": "tqq34_8"
+      }
+    },
+    {
+      "id": "tqq34_8",
+      "type": "text",
+      "label": "*33.您参与自然教育活动的主要动机是（可多选，）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq34_8",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q34",
+        "parent_option": 8,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q35",
+      "type": "checkbox",
+      "label": "*34.若您尚未参与或参与较少，主要原因是什么?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq35_8",
+        "other_text_8": "tqq35_8"
+      }
+    },
+    {
+      "id": "tqq35_8",
+      "type": "text",
+      "label": "*34.若您尚未参与或参与较少，主要原因是什么?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq35_8",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q35",
+        "parent_option": 8,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q36",
+      "type": "radio",
+      "label": "*35.您是否愿意在未来参与自然教育相关活动或服务?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q37",
+      "type": "checkbox",
+      "label": "*36.您最愿意参与的自然教育相关形式是（可多选）:【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq37_7",
+        "other_text_7": "tqq37_7"
+      }
+    },
+    {
+      "id": "tqq37_7",
+      "type": "text",
+      "label": "*36.您最愿意参与的自然教育相关形式是（可多选）:【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq37_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q37",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q38",
+      "type": "checkbox",
+      "label": "*37.如果要让您参与自然教育，您最需要哪些支持?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq38_6",
+        "other_text_6": "tqq38_6"
+      }
+    },
+    {
+      "id": "tqq38_6",
+      "type": "text",
+      "label": "*37.如果要让您参与自然教育，您最需要哪些支持?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq38_6",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q38",
+        "parent_option": 6,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q39",
+      "type": "radio",
+      "label": "*38.您认为参与自然教育对您家庭收入的影响如何?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q40",
+      "type": "checkbox",
+      "label": "*39.自然教育为您家庭带来了哪些经济收益?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq40_6",
+        "other_text_6": "tqq40_6"
+      }
+    },
+    {
+      "id": "tqq40_6",
+      "type": "text",
+      "label": "*39.自然教育为您家庭带来了哪些经济收益?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq40_6",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q40",
+        "parent_option": 6,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q41",
+      "type": "radio",
+      "label": "*40.自然教育是否帮助您掌握了新的知识或技能?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q42",
+      "type": "radio",
+      "label": "*41.自然教育对您家最大的帮助是?（单选）",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q43",
+      "type": "checkbox",
+      "label": "*42.您认为自然教育对您家庭生计的改善主要体现在哪些方面?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq43_7",
+        "other_text_7": "tqq43_7"
+      }
+    },
+    {
+      "id": "tqq43_7",
+      "type": "text",
+      "label": "*42.您认为自然教育对您家庭生计的改善主要体现在哪些方面?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq43_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q43",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q44",
+      "type": "radio",
+      "label": "*43.您对本地生态环境状况的总体评价是:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q45",
+      "type": "radio",
+      "label": "*44.您认为过去五年本地生态环境的变化趋势是:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q46",
+      "type": "radio",
+      "label": "*45.您对本地的自然环境是否有特殊的情感依恋（如觉得这片山林是祖辈留下的、有深厚感情）?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q47",
+      "type": "radio",
+      "label": "*46.您对本地生态环境保护相关政策的了解程度:",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q48",
+      "type": "radio",
+      "label": "*47.您是否了解保护地/自然教育基地的相关管理规定（如禁伐、禁猎、垃圾处理等）?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q49",
+      "type": "checkbox",
+      "label": "*48.过去一年，您在农业生产中是否采取了以下措施?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q50",
+      "type": "checkbox",
+      "label": "*49.过去一年，您在资源利用方面是否有以下行为变化?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q51",
+      "type": "checkbox",
+      "label": "*50.过去一年，您是否参与了以下环境保护活动?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q52",
+      "type": "radio",
+      "label": "*51.当发现有人在保护区内或周边进行盗伐、盗猎、违规建设等行为时，您会怎么做?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q53",
+      "type": "radio",
+      "label": "*52.您是否愿意参与社区的生态保护和环境管护工作?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q54",
+      "type": "radio",
+      "label": "*53. 您认为参与自然教育是否增强了您的环保意识和保护行为?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q55",
+      "type": "radio",
+      "label": "*54.您对本地自然资源的依赖程度如何（如木材、薪柴、水源、野菜、药材等）?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q56",
+      "type": "radio",
+      "label": "*55.您是否了解社区参与自然教育基地/保护地规划决策的渠道?",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q57",
+      "type": "radio",
+      "label": "*56.您认为村民在自然教育基地/保护地的管理和决策中应该扮演什么角色?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q58",
+      "type": "checkbox",
+      "label": "*57.您认为当前社区参与自然教育的主要障碍是什么?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq58_6",
+        "other_text_6": "tqq58_6"
+      }
+    },
+    {
+      "id": "tqq58_6",
+      "type": "text",
+      "label": "*57.您认为当前社区参与自然教育的主要障碍是什么?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq58_6",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q58",
+        "parent_option": 6,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q59",
+      "type": "radio",
+      "label": "*58.您认为自然教育带来的收益在社区中分配是否公平?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q60",
+      "type": "radio",
+      "label": "*59.您认为外来企业在当地开展自然教育时，是否充分考虑了村民的利益?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q61",
+      "type": "checkbox",
+      "label": "*60.您认为游客的到来对本地产生了哪些影响?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q62",
+      "type": "checkbox",
+      "label": "*61.您希望政府在推动自然教育社区参与方面采取哪些措施?（可多选）【多选题】",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_sample",
+        "params": {
+          "min": 2,
+          "max": 4
+        }
+      },
+      "required": true,
+      "metadata": {
+        "other_text_id": "tqq62_7",
+        "other_text_7": "tqq62_7"
+      }
+    },
+    {
+      "id": "tqq62_7",
+      "type": "text",
+      "label": "*61.您希望政府在推动自然教育社区参与方面采取哪些措施?（可多选）【多选题】 - 其他选项说明",
+      "options": [],
+      "selector": {
+        "template": "#tqq62_7",
+        "container": null,
+        "special_handling": "other_option_text"
+      },
+      "strategy": {
+        "type": "random_text",
+        "params": {
+          "length": 10
+        }
+      },
+      "required": true,
+      "metadata": {
+        "parent_question": "q62",
+        "parent_option": 7,
+        "other_option_text": true
+      }
+    },
+    {
+      "id": "q63",
+      "type": "text",
+      "label": "*62.您对本地自然教育未来的发展有何期待或建议?",
+      "options": [],
+      "selector": {
+        "template": "#q{id}",
+        "container": null,
+        "special_handling": "use_js_setvalue"
+      },
+      "strategy": {
+        "type": "text_pool",
+        "params": {
+          "pool": []
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q64",
+      "type": "radio",
+      "label": "*63.在以下选择中，您更倾向于哪个?（单选）",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q65",
+      "type": "radio",
+      "label": "*64.您的生产经营策略更接近以下哪一种?",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q66",
+      "type": "radio",
+      "label": "*65.如果今天给您1000元，和一年后给您1200元，您选哪个?",
+      "options": [
+        1,
+        2,
+        3
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.3333333333333333,
+            0.3333333333333333,
+            0.3333333333333333
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q67",
+      "type": "radio",
+      "label": "*66.如果参加自然教育培训需要投入时间学习（无报酬），但半年后能获得导览/讲课的机会赚钱，您愿意吗?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q68",
+      "type": "radio",
+      "label": "*67.如果社区开展一项生态保护募捐，您愿意捐出年收入的多少?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q69",
+      "type": "radio",
+      "label": "*68.在做资源利用决策时（如采伐林木、开垦土地），您会考虑对后续的影响吗?",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 95,
+    "identified_types": {
+      "text": 35,
+      "radio": 39,
+      "checkbox": 21
+    }
+  }
+}

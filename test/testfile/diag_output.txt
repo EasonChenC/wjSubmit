@@ -1,0 +1,144 @@
+================================================================================
+Schema诊断
+================================================================================
+
+总题目数: 95
+题型统计: {'text': 35, 'radio': 39, 'checkbox': 21}
+
+TEXT类型题目数: 35
+
+前20个TEXT题目详情:
+--------------------------------------------------------------------------------
+
+1. ID: q1_1
+   标签: 调查地点:
+   选择器: input[id='q1_1'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q1', 'sub_input': True, 'contenteditable_input': True}
+
+2. ID: q1_2
+   标签: 调查地点:市
+   选择器: input[id='q1_2'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q1', 'sub_input': True, 'contenteditable_input': True}
+
+3. ID: q1_3
+   标签: 调查地点:市县（区）
+   选择器: input[id='q1_3'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q1', 'sub_input': True, 'contenteditable_input': True}
+
+4. ID: q1_4
+   标签: 调查地点:市县（区）镇（乡）
+   选择器: input[id='q1_4'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q1', 'sub_input': True, 'contenteditable_input': True}
+
+5. ID: q3
+   标签: 您的年龄:岁*
+   选择器: #div3 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '3', 'contenteditable': True}
+
+6. ID: tqq9_8
+   标签: *8.您的主要生计来源（可多选）:【多选题】 - 其他选项说明
+   选择器: #tqq9_8
+   特殊处理: other_option_text
+   元数据: {'parent_question': 'q9', 'parent_option': 8, 'other_option_text': True}
+
+7. ID: q10
+   标签: 您家庭总人口数:人*
+   选择器: #div10 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '10', 'contenteditable': True}
+
+8. ID: q11
+   标签: 您家庭劳动力人数（18-65岁，有劳动能力）:人*
+   选择器: #div11 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '11', 'contenteditable': True}
+
+9. ID: q12
+   标签: 您家庭承包的耕地面积:亩*
+   选择器: #div12 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '12', 'contenteditable': True}
+
+10. ID: q13
+   标签: 您家庭承包/经营的林地面积:亩*
+   选择器: #div13 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '13', 'contenteditable': True}
+
+11. ID: q14
+   标签: 您家距离最近的自然教育基地/保护地的距离:公里*
+   选择器: #div14 span.textCont[contenteditable='true']
+   特殊处理: contenteditable
+   元数据: {'topic_num': '14', 'contenteditable': True}
+
+12. ID: q16_1
+   标签: 大致金额（单位:元/年）:农业种植收入:
+   选择器: input[id='q16_1'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+13. ID: q16_2
+   标签: 植收入:元;林业收入（木材、林产品等）:
+   选择器: input[id='q16_2'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+14. ID: q16_3
+   标签: 收入（木材、林产品等）:元;畜牧业收入:
+   选择器: input[id='q16_3'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+15. ID: q16_4
+   标签: 元;畜牧业收入:元;本地务工/经商收入:
+   选择器: input[id='q16_4'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+16. ID: q16_5
+   标签: ;本地务工/经商收入:元;外出务工收入:
+   选择器: input[id='q16_5'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+17. ID: q16_6
+   标签: 教育相关服务收入（导游、讲解、食宿等）:
+   选择器: input[id='q16_6'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+18. ID: q16_7
+   标签: 讲解、食宿等）:元;生态补偿/补贴收入:
+   选择器: input[id='q16_7'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+19. ID: q16_8
+   标签: :元;生态补偿/补贴收入:元;其他收入:
+   选择器: input[id='q16_8'] ~ label span.textCont[contenteditable='true']
+   特殊处理: contenteditable_with_id
+   元数据: {'base_id': 'q16', 'sub_input': True, 'contenteditable_input': True}
+
+20. ID: tqq19_7
+   标签: *18.您家庭的主要支出项目为（可多选，）:【多选题】 - 其他选项说明
+   选择器: #tqq19_7
+   特殊处理: other_option_text
+   元数据: {'parent_question': 'q19', 'parent_option': 7, 'other_option_text': True}
+
+
+'其他'选项文本框数量: 16
+
+'其他'选项文本框详情:
+  - tqq9_8: 父题=q9
+  - tqq19_7: 父题=q19
+  - tqq22_6: 父题=q22
+  - tqq23_7: 父题=q23
+  - tqq28_7: 父题=q28
+
+
+完整schema已保存到: schema_diagnosis.json

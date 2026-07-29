@@ -1,0 +1,965 @@
+{
+  "url": "https://v.wjx.cn/vm/wt2CCPO.aspx",
+  "activity_id": "wt2CCPO",
+  "platform": "wjx",
+  "questions": [
+    {
+      "id": "q1",
+      "type": "radio",
+      "label": "*1.系统将为您分配一个随机的购物场景，请点击下方任意一个按钮开启您的体验：(注：两个场景内容不同，请凭第一直觉随意点击其中一个即可)",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q2_0",
+      "type": "matrix",
+      "label": "在刚才浏览商品信息的过程中，您感觉到时间紧迫吗？(1=完全没有，6=极其明显)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q2_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q2"
+      }
+    },
+    {
+      "id": "q2_1",
+      "type": "matrix",
+      "label": "您认为该商品的促销机会难得吗？(1=完全没有，6=极其明显)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q2_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q2"
+      }
+    },
+    {
+      "id": "q3_0",
+      "type": "matrix",
+      "label": "在刚才浏览商品信息的过程中，您感觉到时间紧迫吗？(1=完全没有，6=极其明显)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q3_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q3"
+      }
+    },
+    {
+      "id": "q3_1",
+      "type": "matrix",
+      "label": "您认为该商品的促销机会难得吗？(1=完全没有，6=极其明显)",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q3_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q3"
+      }
+    },
+    {
+      "id": "q4_0",
+      "type": "matrix",
+      "label": "对我个人而言，购买这款产品是一件很重要的事情。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q4_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q4"
+      }
+    },
+    {
+      "id": "q4_1",
+      "type": "matrix",
+      "label": "这款产品对我来说非常有意义。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q4_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q4"
+      }
+    },
+    {
+      "id": "q4_2",
+      "type": "matrix",
+      "label": "购买这类产品对我来说是一件令人兴奋的事情。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q4_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q4"
+      }
+    },
+    {
+      "id": "q5_0",
+      "type": "matrix",
+      "label": "我担心这个产品实际效果没有广告说的那么好。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q5_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q5"
+      }
+    },
+    {
+      "id": "q5_1",
+      "type": "matrix",
+      "label": "我担心买了这个产品后会产生后悔情绪。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q5_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q5"
+      }
+    },
+    {
+      "id": "q5_2",
+      "type": "matrix",
+      "label": "我担心这个产品存在未被告知的隐患。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q5_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q5"
+      }
+    },
+    {
+      "id": "q6_0",
+      "type": "matrix",
+      "label": "购物时，我会货比三家，只买最便宜的。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q6_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q6"
+      }
+    },
+    {
+      "id": "q6_1",
+      "type": "matrix",
+      "label": "即使我很喜欢某样东西，如果价格太高我也绝不会买。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q6_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q6"
+      }
+    },
+    {
+      "id": "q6_2",
+      "type": "matrix",
+      "label": "我对商品的价格变动非常敏感。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q6_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q6"
+      }
+    },
+    {
+      "id": "q7_0",
+      "type": "matrix",
+      "label": "我会考虑购买这个产品。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q7_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q7"
+      }
+    },
+    {
+      "id": "q7_1",
+      "type": "matrix",
+      "label": "如果现在需要，我会优先选择这个产品。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q7_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q7"
+      }
+    },
+    {
+      "id": "q7_2",
+      "type": "matrix",
+      "label": "我会向朋友推荐这个产品。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q7_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q7"
+      }
+    },
+    {
+      "id": "q8",
+      "type": "radio",
+      "label": "*6.为了确保数据有效性，请选择“非常不同意”。",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q9",
+      "type": "radio",
+      "label": "*7.某少儿编程课广告称：“现在不学编程，孩子就会缺乏逻辑思维；缺乏逻辑思维，将来就无法适应人工智能时代；无法适应AI时代，孩子未来注定会被社会淘汰。为了孩子的未来，请立即报名！”您认为这段广告的逻辑性如何？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q10",
+      "type": "radio",
+      "label": "*8.某款“量子能量水”广告称：“本产品由诺贝尔物理学奖得主XXX教授担任首席科学顾问，采用最新量子技术，喝了能增强免疫力，预防感冒。”基于这段介绍，您对这款水的信任度如何？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q11",
+      "type": "radio",
+      "label": "*9.某健身房推销称：“要么现在办卡享受5折优惠，要么以后每天多花50块钱去医院看病。聪明人都会算这笔账。”您认为这种说法的逻辑性如何？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q12",
+      "type": "radio",
+      "label": "*10.某理财课广告称：“看看我们的学员小王，学了3天就赚了10万！你也快来报名吧，你也能像他一样！”看到这个广告，您的第一反应是？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q13",
+      "type": "radio",
+      "label": "*11.某保健品广告称：“为什么我们的‘脑黄金’是市场上最好的补脑产品？因为它含有独特的‘智慧因子’，而只有最好的补脑产品才能含有这种因子。”您认为这段论证是否有效？",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q14_0",
+      "type": "matrix",
+      "label": "我经常会买一些当时很想要，但事后觉得没用的东西。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q14_0']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q14"
+      }
+    },
+    {
+      "id": "q14_1",
+      "type": "matrix",
+      "label": "在购物时，我很容易受到促销氛围的影响而冲动下单。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q14_1']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q14"
+      }
+    },
+    {
+      "id": "q14_2",
+      "type": "matrix",
+      "label": "我买东西经常是凭感觉，而不是经过深思熟虑。",
+      "options": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7"
+      ],
+      "selector": {
+        "template": "a[dval='{value}']",
+        "container": "tr[fid='q14_2']",
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "random_int",
+        "params": {
+          "min": 3,
+          "max": 5
+        }
+      },
+      "required": true,
+      "metadata": {
+        "base_id": "q14"
+      }
+    },
+    {
+      "id": "q15",
+      "type": "radio",
+      "label": "*13.您的性别：",
+      "options": [
+        1,
+        2
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.5,
+            0.5
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q16",
+      "type": "radio",
+      "label": "*14.您的年龄段：",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285,
+            0.14285714285714285
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q17",
+      "type": "radio",
+      "label": "*15.您的最高学历：",
+      "options": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.25,
+            0.25,
+            0.25,
+            0.25
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q18",
+      "type": "radio",
+      "label": "*16.您的专业背景：",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q19",
+      "type": "radio",
+      "label": "*17.您的平均月收入：",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666,
+            0.16666666666666666
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    },
+    {
+      "id": "q20",
+      "type": "radio",
+      "label": "*18.您的网购频率：",
+      "options": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "selector": {
+        "template": ".label[for=\"q{id}_{value}\"]",
+        "container": null,
+        "special_handling": null
+      },
+      "strategy": {
+        "type": "weighted_random",
+        "params": {
+          "weights": [
+            0.2,
+            0.2,
+            0.2,
+            0.2,
+            0.2
+          ]
+        }
+      },
+      "required": true,
+      "metadata": {}
+    }
+  ],
+  "metadata": {
+    "total_questions": 32,
+    "identified_types": {
+      "radio": 13,
+      "matrix": 19
+    }
+  }
+}

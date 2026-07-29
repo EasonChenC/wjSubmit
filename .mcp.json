@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "chrome-mcp": {
+      "command": "cmd",
+      "args": ["/c", "mcp-chrome-stdio"],
+      "description": "Chrome浏览器自动化控制服务"
+    }
+  }
+}
