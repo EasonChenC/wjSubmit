@@ -1,0 +1,1 @@
+const KEY='questionnaire_token'; export const getToken=()=>localStorage.getItem(KEY)||''; export const setToken=(v:string)=>localStorage.setItem(KEY,v); export const removeToken=()=>localStorage.removeItem(KEY);
