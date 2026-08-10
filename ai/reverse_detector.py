@@ -18,7 +18,7 @@ def _normalize_options(options):
     """
     Normalize options to {value, label} format.
 
-    Handles: integers, strings, dicts with value/label.
+    Handles: dictionaries with value/label, integers, strings.
     """
     if not options:
         return []
@@ -26,14 +26,14 @@ def _normalize_options(options):
     first = options[0]
 
     if isinstance(first, dict):
-        # Already in dict format
+        # Already in dict format with value and label
         return [
-            {"value": str(opt.get("value", opt.get("rowid", ""))), "label": opt.get("label")}
+            {"value": str(opt.get("value", "")), "label": opt.get("label", "")}
             for opt in options
         ]
     elif isinstance(first, (int, str)):
-        # Convert scalar values to dict format
-        return [{"value": str(v)} for v in options]
+        # Fallback: Convert scalar values to dict format (no labels available)
+        return [{"value": str(v), "label": str(v)} for v in options]
     else:
         return []
 
@@ -88,8 +88,8 @@ async def override_schema_with_ai_detection(schema: QuestionnaireSchema,
 
         messages = [{"role": "user", "content": user_message}]
 
-        # Get AI response
-        response_text = await ai_client.chat(messages, temperature=0.1)
+        # Get AI response (larger max_tokens since output scales with question count)
+        response_text = await ai_client.chat(messages, temperature=0.1, max_tokens=4096)
 
         # Parse AI response
         result = _parse_ai_response(response_text)
@@ -144,20 +144,47 @@ def _apply_ai_results(schema: QuestionnaireSchema, questions: list, ai_result: d
 
 
 def _parse_ai_response(response: str) -> Optional[dict]:
-    """Extract JSON from AI response (handles markdown code blocks)"""
+    """Extract JSON from AI response (handles markdown code blocks)
+
+    The response is already the FINAL content from AI (not reasoning_content).
+    Just need to extract JSON from potential markdown code blocks.
+    """
+    # Handle None or empty response
+    if not response:
+        return None
+
     response = response.strip()
 
     # Try to extract JSON from markdown code block
     if '```json' in response:
-        start = response.index('```json') + 7
-        end = response.index('```', start)
-        response = response[start:end].strip()
+        try:
+            start = response.index('```json') + 7
+            end = response.index('```', start)
+            response = response[start:end].strip()
+        except ValueError:
+            pass
+
     elif '```' in response:
-        start = response.index('```') + 3
-        end = response.index('```', start)
-        response = response[start:end].strip()
+        try:
+            start = response.index('```') + 3
+            end = response.index('```', start)
+            response = response[start:end].strip()
+        except ValueError:
+            pass
+
+    # If response starts with '{', try to extract just the JSON part
+    if response.startswith('{'):
+        try:
+            # Find the last '}' to handle cases where there might be trailing text
+            last_brace = response.rfind('}')
+            if last_brace != -1:
+                response = response[:last_brace + 1]
+        except:
+            pass
 
     try:
         return json.loads(response)
-    except json.JSONDecodeError:
+    except json.JSONDecodeError as e:
+        print(f"Failed to parse JSON response: {e}")
+        print(f"Response content: {response[:200]}")
         return None

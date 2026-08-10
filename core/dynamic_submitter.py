@@ -104,6 +104,9 @@ class DynamicSubmitter:
             elif question.type == QuestionType.SORT:
                 await self._fill_sort(page, question, answer)
 
+            elif question.type == QuestionType.WEIGHT:
+                await self._fill_weight(page, question, answer)
+
             else:
                 print(f"[WARN] 未知题型: {question.id} - {question.type}")
 
@@ -531,6 +534,36 @@ class DynamicSubmitter:
             await page.click(selector, timeout=5000)
             await asyncio.sleep(0.4)  # 排序项之间暂停
 
+    async def _fill_weight(self, page: Page, question: Question, answer: Dict[str, int]):
+        """填写权重题
+
+        权重题由多个 slider 输入框组成，每项对应一个百分比，总和为100
+
+        Args:
+            page: Playwright页面对象
+            question: 题目对象
+            answer: 权重字典，如 {"1": 30, "2": 25, "3": 20, "4": 15, "5": 7, "6": 3}
+        """
+        q_num = question.id[1:]
+
+        # 获取所有权重输入框（按顺序）
+        inputs = await page.query_selector_all(f'#div{q_num} input.ui-slider-input')
+
+        for idx, input_elem in enumerate(inputs):
+            row_key = str(idx + 1)
+            value = answer.get(row_key, 0)
+
+            # 用 JS 设置 input 值并触发 input/change 事件，触发滑块更新
+            await page.evaluate(
+                """([elem, val]) => {
+                    elem.value = val;
+                    elem.dispatchEvent(new Event('input', {bubbles: true}));
+                    elem.dispatchEvent(new Event('change', {bubbles: true}));
+                }""",
+                [input_elem, str(value)]
+            )
+            await asyncio.sleep(0.2)
+
     async def _submit_form(self, page: Page) -> bool:
         """提交表单
 
@@ -607,7 +640,12 @@ class DynamicSubmitter:
             print(f"[WARN] 提交超时")
             return False
         except Exception as e:
-            print(f"[ERROR] 提交异常: {str(e)}")
+            err = str(e)
+            # 页面导航导致的上下文销毁，说明表单已正常提交
+            if "Execution context was destroyed" in err or "context was destroyed" in err:
+                print(f"[OK] 提交成功（页面已跳转）")
+                return True
+            print(f"[ERROR] 提交异常: {err}")
             return False
 
     async def _handle_smart_captcha(self, page: Page) -> bool:

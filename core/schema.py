@@ -22,6 +22,7 @@ class QuestionType(Enum):
     RATING = "rating"            # 评分题（1-5星）
     NPS = "nps"                  # NPS推荐度（0-10分）
     SORT = "sort"                # 排序题
+    WEIGHT = "weight"            # 权重题（总和为100%）
     UNKNOWN = "unknown"          # 未识别题型
 
 
@@ -187,6 +188,43 @@ class QuestionnaireSchema:
             'metadata': self.metadata,
         }
 
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -> 'QuestionnaireSchema':
+        """从to_dict()产出的字典还原为QuestionnaireSchema对象
+
+        用于从数据库JSONB字段（analyzed_schema）读取后重建可用的Schema，
+        供DynamicAnswerGenerator/DynamicSubmitter直接使用，无需重新分析问卷页面。
+        """
+        questions = []
+        for q in data.get('questions', []):
+            selector_data = q.get('selector') or {}
+            strategy_data = q.get('strategy') or {}
+            questions.append(Question(
+                id=q['id'],
+                type=QuestionType(q['type']),
+                label=q['label'],
+                options=q.get('options', []),
+                selector=SelectorConfig(
+                    template=selector_data.get('template', ''),
+                    container=selector_data.get('container'),
+                    special_handling=selector_data.get('special_handling'),
+                ),
+                strategy=AnswerStrategy(
+                    type=strategy_data.get('type', 'weighted_random'),
+                    params=strategy_data.get('params') or {},
+                ),
+                required=q.get('required', True),
+                metadata=q.get('metadata') or {},
+            ))
+
+        return QuestionnaireSchema(
+            url=data.get('url', ''),
+            activity_id=data.get('activity_id', ''),
+            platform=data.get('platform', ''),
+            questions=questions,
+            metadata=data.get('metadata') or {},
+        )
+
 
 # 预定义的选择器模板（基于skill.md）
 SELECTOR_TEMPLATES = {
@@ -229,6 +267,11 @@ SELECTOR_TEMPLATES = {
         template='li.ui-li-static[serial="{value}"]',
         container='#div{id}',
         special_handling="sequential_click"  # 需要依次点击
+    ),
+    QuestionType.WEIGHT: SelectorConfig(
+        template='input.ui-slider-input[name="q{id}"]',
+        container='#div{id}',
+        special_handling="weight_distribution"  # 权重分配
     ),
 }
 
@@ -273,5 +316,9 @@ STRATEGY_TEMPLATES = {
     QuestionType.SORT: AnswerStrategy(
         type="random_shuffle",
         params={}
+    ),
+    QuestionType.WEIGHT: AnswerStrategy(
+        type="weight_distribution",
+        params={"total": 100, "strategy": "random"}  # random, even, bias
     ),
 }

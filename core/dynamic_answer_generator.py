@@ -16,6 +16,7 @@ from .schema import (
     QuestionType,
     AnswerStrategy,
 )
+from utils.scale_utils import split_scale_values
 
 
 class DynamicAnswerGenerator:
@@ -24,13 +25,42 @@ class DynamicAnswerGenerator:
     根据问卷Schema自动生成答案，支持9种题型。
     """
 
-    def __init__(self, schema: QuestionnaireSchema):
+    @staticmethod
+    def _extract_option_values(options: list) -> list:
+        """从选项列表提取值
+
+        处理两种格式：
+        - 新格式: [{"value": 1, "label": "..."}, ...]
+        - 旧格式: [1, 2, 3, ...]
+        """
+        if not options:
+            return []
+
+        first = options[0]
+        if isinstance(first, dict) and "value" in first:
+            # 新格式：字典with value字段
+            return [opt["value"] for opt in options]
+        else:
+            # 旧格式：直接的值
+            return list(options)
+
+    def __init__(self, schema: QuestionnaireSchema, mode: str = "random",
+                 attitude: str = "positive", add_variation: bool = False,
+                 variation_ratio: float = 0.05):
         """初始化生成器
 
         Args:
             schema: 问卷结构定义
+            mode: 提交模式，'high_reliability'（高信度）或 'random'（随机）
+            attitude: 态度倾向，'positive' 或 'negative'（仅在 high_reliability 模式生效）
+            add_variation: 是否添加答案变化（穿插变化）
+            variation_ratio: 变化比例（0-1之间）
         """
         self.schema = schema
+        self.mode = mode  # high_reliability or random
+        self.attitude = attitude  # positive or negative
+        self.add_variation = add_variation
+        self.variation_ratio = variation_ratio
 
     def generate_answers(self) -> Dict[str, Any]:
         """生成所有题目的答案
@@ -87,9 +117,51 @@ class DynamicAnswerGenerator:
         elif question.type == QuestionType.SORT:
             return self._generate_sort_answer(question, strategy)
 
+        elif question.type == QuestionType.WEIGHT:
+            return self._generate_weight_answer(question, strategy)
+
         else:
             # UNKNOWN类型，返回None
             return None
+
+    def _pick_by_attitude(self, question: Question, option_values: list):
+        """根据 attitude 从量表题选项中挑选一个值
+
+        优先使用 metadata 中已有的 positive_values/negative_values（AI或关键字
+        检测器写入）；如果缺失（如量表题被识别但未推导态度值），现场根据选项
+        数值和 is_reverse 推导，保证 attitude 在任何检测路径下都生效。
+
+        支持穿插变化：启用时有 variation_ratio 概率忽略态度，随机选择。
+
+        Args:
+            question: 题目对象
+            option_values: 该题的选项数值列表
+
+        Returns:
+            选中的值；如果无法确定量表方向（选项不足），返回 None 交由调用方 fallback
+        """
+        # 穿插变化：概率性随机选择，不遵循态度
+        if self.add_variation and random.random() < self.variation_ratio:
+            return random.choice(option_values)
+
+        positive_values = question.metadata.get('positive_values') or []
+        negative_values = question.metadata.get('negative_values') or []
+
+        if not positive_values and not negative_values:
+            is_reverse = question.metadata.get('is_reverse', False)
+            positive_values, negative_values, _ = split_scale_values(option_values, is_reverse=is_reverse)
+
+        target_values = positive_values if self.attitude == "positive" else negative_values
+
+        if target_values:
+            matching = [
+                opt for opt in option_values
+                if opt in target_values or str(opt) in [str(v) for v in target_values]
+            ]
+            if matching:
+                return random.choice(matching)
+
+        return None
 
     def _generate_radio_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成单选题答案
@@ -101,13 +173,27 @@ class DynamicAnswerGenerator:
         Returns:
             选项ID，如 1, 2, 3
         """
+        option_values = self._extract_option_values(question.options)
+        is_scale = question.metadata.get('is_scale', False)
+
+        # 随机模式：不考虑态度，直接随机
+        if self.mode == "random":
+            return random.choice(option_values)
+
+        # 高可靠性模式：量表题根据 attitude 选择
+        if is_scale:
+            answer = self._pick_by_attitude(question, option_values)
+            if answer is not None:
+                return answer
+
+        # 非量表题或 Fallback：使用策略
         if strategy.type == "weighted_random":
             weights = strategy.params.get('weights')
-            if weights and len(weights) == len(question.options):
-                return random.choices(question.options, weights=weights)[0]
+            if weights and len(weights) == len(option_values):
+                return random.choices(option_values, weights=weights)[0]
 
         # 默认：均等概率随机选择
-        return random.choice(question.options)
+        return random.choice(option_values)
 
     def _generate_checkbox_answer(self, question: Question, strategy: AnswerStrategy) -> List[int]:
         """生成多选题答案
@@ -119,23 +205,25 @@ class DynamicAnswerGenerator:
         Returns:
             选项ID列表，如 [1, 3, 5]
         """
+        option_values = self._extract_option_values(question.options)
+
         if strategy.type == "random_sample":
             min_choices = strategy.params.get('min', 2)
             max_choices = strategy.params.get('max', 4)
 
             # 确保范围合法
-            min_choices = max(1, min(min_choices, len(question.options)))
-            max_choices = max(min_choices, min(max_choices, len(question.options)))
+            min_choices = max(1, min(min_choices, len(option_values)))
+            max_choices = max(min_choices, min(max_choices, len(option_values)))
 
             # 随机选择数量
             num_choices = random.randint(min_choices, max_choices)
 
             # 随机抽样
-            return sorted(random.sample(question.options, num_choices))
+            return sorted(random.sample(option_values, num_choices))
 
         # 默认：随机选择2-3个
-        num_choices = random.randint(2, min(3, len(question.options)))
-        return sorted(random.sample(question.options, num_choices))
+        num_choices = random.randint(2, min(3, len(option_values)))
+        return sorted(random.sample(option_values, num_choices))
 
     def _generate_select_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成下拉选择题答案
@@ -210,24 +298,23 @@ class DynamicAnswerGenerator:
         Returns:
             评分值，如 "3", "4", "5"
         """
-        if strategy.type == "random_int":
-            min_val = strategy.params.get('min', 3)
-            max_val = strategy.params.get('max', 5)
+        option_values = self._extract_option_values(question.options)
 
-            # 从options中筛选出在范围内的值
-            valid_options = [opt for opt in question.options
-                           if int(opt) >= min_val and int(opt) <= max_val]
+        # 高可靠性模式：根据态度选择积极/消极值
+        if self.mode == "high_reliability":
+            is_scale = question.metadata.get('is_scale', True)
 
-            if valid_options:
-                return random.choice(valid_options)
+            if is_scale:
+                answer = self._pick_by_attitude(question, option_values)
+                if answer is not None:
+                    return answer
 
-        # 默认：从所有选项中随机选择，倾向高分
-        if len(question.options) >= 3:
-            # 80%概率选择后3个（高分）
+        # 随机模式或无法应用态度：自然分布随机（不代表任何态度倾向）
+        if len(option_values) >= 3:
             if random.random() < 0.8:
-                return random.choice(question.options[-3:])
+                return random.choice(option_values[-3:])
 
-        return random.choice(question.options)
+        return random.choice(option_values)
 
     def _generate_rating_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成评分题答案（1-5分）
@@ -239,19 +326,29 @@ class DynamicAnswerGenerator:
         Returns:
             评分值，如 1, 2, 3, 4, 5
         """
+        option_values = self._extract_option_values(question.options)
+
+        # 高可靠性模式：根据态度选择积极/消极值
+        if self.mode == "high_reliability":
+            is_scale = question.metadata.get('is_scale', True)
+
+            if is_scale:
+                answer = self._pick_by_attitude(question, option_values)
+                if answer is not None:
+                    return answer
+
+        # 随机模式或无法应用态度：使用策略权重（题型默认自然分布）
         if strategy.type == "weighted_random":
             weights = strategy.params.get('weights')
-            if weights and len(weights) == len(question.options):
-                return random.choices(question.options, weights=weights)[0]
+            if weights and len(weights) == len(option_values):
+                return random.choices(option_values, weights=weights)[0]
 
-        # 默认：倾向高分（4-5分占80%）
         if random.random() < 0.8:
-            # 高分
-            high_scores = [opt for opt in question.options if int(opt) >= 4]
+            high_scores = [opt for opt in option_values if int(opt) >= 4]
             if high_scores:
                 return random.choice(high_scores)
 
-        return random.choice(question.options)
+        return random.choice(option_values)
 
     def _generate_nps_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成NPS推荐度答案（0-10分）
@@ -263,18 +360,24 @@ class DynamicAnswerGenerator:
         Returns:
             推荐度分值，如 7, 8, 9, 10
         """
+        option_values = self._extract_option_values(question.options)
+
+        # 高可靠性模式：根据态度选择积极/消极值
+        if self.mode == "high_reliability":
+            is_scale = question.metadata.get('is_scale', True)
+
+            if is_scale:
+                answer = self._pick_by_attitude(question, option_values)
+                if answer is not None:
+                    return answer
+
+        # 随机模式或无法应用态度：使用策略权重（题型默认自然分布）
         if strategy.type == "weighted_random":
             weights = strategy.params.get('weights')
-            if weights and len(weights) == len(question.options):
-                return random.choices(question.options, weights=weights)[0]
+            if weights and len(weights) == len(option_values):
+                return random.choices(option_values, weights=weights)[0]
 
-        # 默认：倾向推荐（7-10分占70%）
-        if random.random() < 0.7:
-            promoters = [opt for opt in question.options if int(opt) >= 7]
-            if promoters:
-                return random.choice(promoters)
-
-        return random.choice(question.options)
+        return random.choice(option_values)
 
     def _generate_sort_answer(self, question: Question, strategy: AnswerStrategy) -> List[int]:
         """生成排序题答案
@@ -286,8 +389,9 @@ class DynamicAnswerGenerator:
         Returns:
             排序后的serial值列表，如 [3, 1, 5, 2, 4, 6]
         """
+        option_values = self._extract_option_values(question.options)
         # 随机打乱选项顺序
-        shuffled = question.options.copy()
+        shuffled = option_values.copy()
         random.shuffle(shuffled)
         return shuffled
 
@@ -312,6 +416,86 @@ class DynamicAnswerGenerator:
         }
 
         return answers
+
+    def _generate_weight_answer(self, question: Question, strategy: AnswerStrategy) -> Dict[str, int]:
+        """生成权重题答案
+
+        权重题需要分配总数为100%的权重到多个因素
+
+        Args:
+            question: 题目对象
+            strategy: 答案策略
+
+        Returns:
+            权重字典，如 {"1": 20, "2": 15, "3": 25, ...}
+        """
+        option_values = self._extract_option_values(question.options)
+        num_items = len(option_values)
+
+        if num_items == 0:
+            return {}
+
+        # 获取分配策略
+        distribution_strategy = strategy.params.get('strategy', 'random')
+
+        if distribution_strategy == 'even':
+            # 均匀分配
+            weight_per_item = 100 / num_items
+            weights = {str(i + 1): int(weight_per_item) for i in range(num_items)}
+            # 调整最后一项以确保总和为100
+            total = sum(weights.values())
+            if total != 100:
+                weights[str(num_items)] += (100 - total)
+
+        elif distribution_strategy == 'bias':
+            # 倾向分配（前几项权重较高）
+            if num_items == 1:
+                weights = {"1": 100}
+            elif num_items == 2:
+                weights = {"1": 60, "2": 40}
+            elif num_items == 3:
+                weights = {"1": 50, "2": 30, "3": 20}
+            elif num_items == 4:
+                weights = {"1": 40, "2": 30, "3": 20, "4": 10}
+            elif num_items == 5:
+                weights = {"1": 35, "2": 25, "3": 20, "4": 15, "5": 5}
+            elif num_items == 6:
+                weights = {"1": 30, "2": 25, "3": 20, "4": 15, "5": 7, "6": 3}
+            else:
+                # 超过6项，使用随机
+                return self._random_weight_distribution(num_items)
+
+        else:  # random (默认)
+            # 随机分配
+            weights = self._random_weight_distribution(num_items)
+
+        return weights
+
+    def _random_weight_distribution(self, num_items: int) -> Dict[str, int]:
+        """生成随机权重分配
+
+        使用 stick-breaking 算法生成总和为100的随机权重
+
+        Args:
+            num_items: 权重项数量
+
+        Returns:
+            权重字典
+        """
+        if num_items == 1:
+            return {"1": 100}
+
+        # 生成随机权重
+        random_values = [random.random() for _ in range(num_items)]
+        total = sum(random_values)
+        normalized = [int((val / total) * 100) for val in random_values]
+
+        # 调整确保总和为100
+        current_sum = sum(normalized)
+        if current_sum != 100:
+            normalized[-1] += (100 - current_sum)
+
+        return {str(i + 1): normalized[i] for i in range(num_items)}
 
 
 class TextAnswerPool:

@@ -1,16 +1,24 @@
 """AI configuration management module
 
-Manages global AI settings (API key, model, base URL) in memory.
-Supports OpenAI-compatible APIs and third-party proxies.
+Manages global AI settings (API key, model, base URL) backed by the
+`ai_configs` table (see sql/002_ai_configs.sql, db/models.py::AIConfigModel).
+
+Currently the project runs in single-user mode: all reads/writes target the
+one row where user_id IS NULL (the "global" config). Once authentication is
+introduced, pass a user_id through to scope configs per user.
 """
 
 from dataclasses import dataclass
-from typing import Optional
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import AIConfigModel
 
 
 @dataclass
 class AIConfig:
-    """AI configuration"""
+    """AI configuration (plain data, detached from the DB row)"""
     api_key: str = ""
     model: str = "gpt-4o-mini"
     base_url: str = "https://api.openai.com/v1"
@@ -18,47 +26,60 @@ class AIConfig:
 
 
 class AIConfigManager:
-    """Singleton manager for AI configuration (in-memory storage)"""
+    """Loads/persists AI configuration from the database.
 
-    _instance: Optional['AIConfigManager'] = None
-    _config: AIConfig
+    Replaces the previous in-memory singleton. All methods are async and
+    take an AsyncSession (see db.session.get_session) so callers control
+    the transaction boundary.
+    """
 
-    def __new__(cls) -> 'AIConfigManager':
-        if cls._instance is None:
-            cls._instance = super().__new__(cls)
-            cls._instance._config = AIConfig()
-        return cls._instance
+    async def _get_or_create_row(self, session: AsyncSession) -> AIConfigModel:
+        """Get the global config row (user_id IS NULL), creating it if absent"""
+        result = await session.execute(
+            select(AIConfigModel).where(AIConfigModel.user_id.is_(None))
+        )
+        row = result.scalar_one_or_none()
 
-    @classmethod
-    def get_instance(cls) -> 'AIConfigManager':
-        """Get singleton instance"""
-        if cls._instance is None:
-            cls._instance = cls()
-        return cls._instance
+        if row is None:
+            row = AIConfigModel()
+            session.add(row)
+            await session.commit()
 
-    def get_config(self) -> AIConfig:
+        return row
+
+    async def get_config(self, session: AsyncSession) -> AIConfig:
         """Get current configuration"""
-        return self._config
+        row = await self._get_or_create_row(session)
+        return AIConfig(
+            api_key=row.api_key,
+            model=row.model,
+            base_url=row.base_url,
+            enabled=row.enabled,
+        )
 
-    def update_config(self,
-                     api_key: Optional[str] = None,
-                     model: Optional[str] = None,
-                     base_url: Optional[str] = None,
-                     enabled: Optional[bool] = None) -> None:
+    async def update_config(
+        self,
+        session: AsyncSession,
+        api_key: str | None = None,
+        model: str | None = None,
+        base_url: str | None = None,
+        enabled: bool | None = None,
+    ) -> None:
         """Update configuration (only non-None values are updated)"""
+        row = await self._get_or_create_row(session)
+
         if api_key is not None:
-            self._config.api_key = api_key
+            row.api_key = api_key
         if model is not None:
-            self._config.model = model
+            row.model = model
         if base_url is not None:
-            self._config.base_url = base_url
+            row.base_url = base_url
         if enabled is not None:
-            self._config.enabled = enabled
+            row.enabled = enabled
 
-    def is_configured(self) -> bool:
+        await session.commit()
+
+    async def is_configured(self, session: AsyncSession) -> bool:
         """Check if AI is fully configured and enabled"""
-        return bool(self._config.api_key.strip()) and self._config.enabled
-
-    def reset(self) -> None:
-        """Reset to default configuration"""
-        self._config = AIConfig()
+        config = await self.get_config(session)
+        return bool(config.api_key.strip()) and config.enabled

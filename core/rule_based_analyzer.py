@@ -298,6 +298,14 @@ class RuleBasedAnalyzer:
         if ul_sort and ul_sort.find('li', attrs={'serial': True}):
             return QuestionType.SORT
 
+        # 7.5 权重题: <table> + input[class="ui-slider-input"] + total="100"
+        if div.get('total') == '100' or div.get('type') == '12':
+            table = div.find('table')
+            if table:
+                slider_inputs = table.find_all('input', class_='ui-slider-input')
+                if slider_inputs:
+                    return QuestionType.WEIGHT
+
         # 8. 多行文本题: <textarea>
         if div.find('textarea'):
             return QuestionType.TEXTAREA
@@ -333,6 +341,13 @@ class RuleBasedAnalyzer:
         if not table:
             return questions
 
+        # 提取表头标签（如"很不满意"/"不满意"/.../"很满意"），
+        # 与各评分列的dval顺序一一对应（表头第一个th为空，对应行标题列，需跳过）
+        header_row = table.find('tr', class_='trlabel')
+        header_labels = []
+        if header_row:
+            header_labels = [th.get_text(strip=True) for th in header_row.find_all('th')][1:]
+
         rows = table.find_all('tr', attrs={'fid': True})
 
         for row in rows:
@@ -344,10 +359,17 @@ class RuleBasedAnalyzer:
             label_td = row.find('td')
             label = label_td.get_text(strip=True) if label_td else ""
 
-            # 提取评分选项（从a[dval]中获取）
+            # 提取评分选项（从a[dval]中获取），并用表头文本作为label
             rating_links = row.find_all('a', attrs={'dval': True})
-            options = [link.get('dval') for link in rating_links]
-            options = sorted(set(options))  # 去重并排序
+            options = []
+            for idx, link in enumerate(rating_links):
+                dval = link.get('dval')
+                try:
+                    value = int(dval)
+                except (TypeError, ValueError):
+                    value = dval
+                opt_label = header_labels[idx] if idx < len(header_labels) else str(value)
+                options.append({"value": value, "label": opt_label})
 
             # 生成选择器
             selector = SelectorConfig(
@@ -730,21 +752,23 @@ class RuleBasedAnalyzer:
         elif question_type == QuestionType.RATING:
             return self._extract_rating_options(div, max_val=5)
         elif question_type == QuestionType.NPS:
-            return list(range(11))  # 0-10
+            return self._extract_nps_options(div)
         elif question_type == QuestionType.SORT:
             return self._extract_sort_options(div)
+        elif question_type == QuestionType.WEIGHT:
+            return self._extract_weight_options(div)
         elif question_type in [QuestionType.TEXT, QuestionType.TEXTAREA]:
             return []  # 文本题没有选项
         else:
             return []
 
-    def _extract_radio_options(self, div: Tag) -> List[int]:
+    def _extract_radio_options(self, div: Tag) -> List[Dict[str, Any]]:
         """提取单选题选项
 
         Returns:
-            选项ID列表，如 [1, 2, 3]
+            选项列表，如 [{"value": 1, "label": "选项1"}, ...]
         """
-        options = []
+        options = {}
         radio_inputs = div.find_all('input', attrs={'type': 'radio'})
 
         for radio in radio_inputs:
@@ -752,17 +776,38 @@ class RuleBasedAnalyzer:
             if radio_id:
                 match = re.search(r'_(\d+)$', radio_id)
                 if match:
-                    options.append(int(match.group(1)))
+                    value = int(match.group(1))
+                    label = ""
 
-        return sorted(set(options))
+                    # 方法1: 查找 <div class="label" for="...">
+                    label_elem = div.find('div', attrs={'class': 'label', 'for': radio_id})
+                    if label_elem:
+                        label = label_elem.get_text(strip=True)
 
-    def _extract_checkbox_options(self, div: Tag) -> List[int]:
+                    # 方法2: 查找 <label for="...">（备选）
+                    if not label:
+                        label_elem = div.find('label', attrs={'for': radio_id})
+                        if label_elem:
+                            label = label_elem.get_text(strip=True)
+
+                    # 方法3: 从radio的下一个兄弟查找（可能有其他结构）
+                    if not label:
+                        next_div = radio.find_next('div', class_='label')
+                        if next_div:
+                            label = next_div.get_text(strip=True)
+
+                    options[value] = {"value": value, "label": label}
+
+        # 按value排序返回
+        return sorted(options.values(), key=lambda x: x['value'])
+
+    def _extract_checkbox_options(self, div: Tag) -> List[Dict[str, Any]]:
         """提取多选题选项
 
         Returns:
-            选项ID列表，如 [1, 2, 3, 4, 5]
+            选项列表，如 [{"value": 1, "label": "选项1"}, ...]
         """
-        options = []
+        options = {}
         checkbox_inputs = div.find_all('input', attrs={'type': 'checkbox'})
 
         for checkbox in checkbox_inputs:
@@ -770,17 +815,38 @@ class RuleBasedAnalyzer:
             if checkbox_id:
                 match = re.search(r'_(\d+)$', checkbox_id)
                 if match:
-                    options.append(int(match.group(1)))
+                    value = int(match.group(1))
+                    label = ""
 
-        return sorted(set(options))
+                    # 方法1: 查找 <div class="label" for="...">
+                    label_elem = div.find('div', attrs={'class': 'label', 'for': checkbox_id})
+                    if label_elem:
+                        label = label_elem.get_text(strip=True)
 
-    def _extract_select_options(self, div: Tag) -> List[int]:
+                    # 方法2: 查找 <label for="...">（备选）
+                    if not label:
+                        label_elem = div.find('label', attrs={'for': checkbox_id})
+                        if label_elem:
+                            label = label_elem.get_text(strip=True)
+
+                    # 方法3: 从checkbox的下一个兄弟查找
+                    if not label:
+                        next_div = checkbox.find_next('div', class_='label')
+                        if next_div:
+                            label = next_div.get_text(strip=True)
+
+                    options[value] = {"value": value, "label": label}
+
+        # 按value排序返回
+        return sorted(options.values(), key=lambda x: x['value'])
+
+    def _extract_select_options(self, div: Tag) -> List[Dict[str, Any]]:
         """提取下拉选择题选项
 
         Returns:
-            选项值列表，如 [1, 2, 3, 4, 5]
+            选项列表，如 [{"value": 1, "label": "选项1"}, ...]
         """
-        options = []
+        options = {}
         select_elem = div.find('select')
 
         if select_elem:
@@ -790,38 +856,78 @@ class RuleBasedAnalyzer:
                 # 跳过占位符（value="-2"或空）
                 if value and value != '-2':
                     try:
-                        options.append(int(value))
+                        value_int = int(value)
+                        label = opt.get_text(strip=True) or ""
+                        options[value_int] = {"value": value_int, "label": label}
                     except ValueError:
                         continue
 
-        return sorted(set(options))
+        # 按value排序返回
+        return sorted(options.values(), key=lambda x: x['value'])
 
-    def _extract_rating_options(self, div: Tag, max_val: int = 5) -> List[int]:
+    def _extract_rating_options(self, div: Tag, max_val: int = 5) -> List[Dict[str, Any]]:
         """提取评分题选项
+
+        评分题的每个选项<a class="rate-off" val="1" title="很不同意">中，
+        title属性即为选项的真实文本内容。
 
         Args:
             div: 题目div元素
             max_val: 最大评分值
 
         Returns:
-            评分选项列表，如 [1, 2, 3, 4, 5]
+            选项列表，如 [{"value": 1, "label": "很不同意"}, ...]
         """
-        # 从HTML中提取实际的评分选项
+        options = {}
         rating_links = div.find_all('a', class_='rate-off')
-        if rating_links:
-            options = []
-            for link in rating_links:
-                val = link.get('val')
-                if val:
-                    try:
-                        options.append(int(val))
-                    except ValueError:
-                        continue
-            if options:
-                return sorted(set(options))
 
-        # 默认返回1-5
-        return list(range(1, max_val + 1))
+        for link in rating_links:
+            val = link.get('val')
+            if not val:
+                continue
+            try:
+                value = int(val)
+            except ValueError:
+                continue
+
+            label = link.get('title') or link.get_text(strip=True) or str(value)
+            options[value] = {"value": value, "label": label}
+
+        if options:
+            return sorted(options.values(), key=lambda x: x['value'])
+
+        # 默认返回1-max_val（无标签，兜底）
+        return [{"value": v, "label": str(v)} for v in range(1, max_val + 1)]
+
+    def _extract_nps_options(self, div: Tag) -> List[Dict[str, Any]]:
+        """提取NPS推荐度选项（0-10分）
+
+        HTML中<a val="1">对应分数0（val = 分数 + 1，与_fill_nps的+1偏移一致），
+        title/文本内容为该分数对应的标签（如"不可能"/"极有可能"）。
+
+        Returns:
+            选项列表，如 [{"value": 0, "label": "不可能"}, ..., {"value": 10, "label": "极有可能"}]
+        """
+        options = {}
+        rating_links = div.find_all('a', class_='rate-off')
+
+        for link in rating_links:
+            val = link.get('val')
+            if not val:
+                continue
+            try:
+                score = int(val) - 1  # val比实际分数大1
+            except ValueError:
+                continue
+
+            label = link.get('title') or link.get_text(strip=True) or str(score)
+            options[score] = {"value": score, "label": label}
+
+        if options:
+            return sorted(options.values(), key=lambda x: x['value'])
+
+        # 默认返回0-10（无标签，兜底）
+        return [{"value": v, "label": str(v)} for v in range(11)]
 
     def _extract_sort_options(self, div: Tag) -> List[int]:
         """提取排序题选项
@@ -969,3 +1075,38 @@ class RuleBasedAnalyzer:
             type_name = question.type.value
             counts[type_name] = counts.get(type_name, 0) + 1
         return counts
+
+    def _extract_weight_options(self, div: Tag) -> List[Dict[str, Any]]:
+        """提取权重题选项
+
+        权重题 HTML 结构：标题行 (<td class="title">) 与 input 行交替出现
+
+        Returns:
+            选项列表，如 [{"value": 1, "label": "菜品口味"}, ...]
+        """
+        options = []
+
+        table = div.find('table')
+        if not table:
+            return options
+
+        rows = table.find_all('tr')
+        option_index = 1
+        pending_label = None
+
+        for row in rows:
+            # 标题行：有 <td class="title"> 但没有 input
+            title_td = row.find('td', class_='title')
+            if title_td and not row.find('input', class_='ui-slider-input'):
+                pending_label = title_td.get_text(strip=True)
+                continue
+
+            # 数据行：有 ui-slider-input
+            input_elem = row.find('input', class_='ui-slider-input')
+            if input_elem:
+                label = pending_label or f"项目{option_index}"
+                options.append({"value": option_index, "label": label})
+                option_index += 1
+                pending_label = None
+
+        return options

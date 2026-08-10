@@ -4,26 +4,27 @@ AI configuration routing module
 Provides AI settings management and connectivity testing APIs.
 """
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import AIConfigRequest, AIConfigResponse, AITestResponse, DataResponse
-from ai.config import AIConfigManager
+from ai import ai_config_manager
 from ai.client import AIClient
+from db.session import get_session
 
 
 router = APIRouter(prefix="/api/ai", tags=["ai"])
 
 
 @router.get("/config", response_model=DataResponse)
-async def get_ai_config():
+async def get_ai_config(session: AsyncSession = Depends(get_session)):
     """
     Get current AI configuration
 
     Returns current AI settings without exposing the API key.
     """
     try:
-        manager = AIConfigManager.get_instance()
-        config = manager.get_config()
+        config = await ai_config_manager.get_config(session)
 
         response_data = AIConfigResponse(
             model=config.model,
@@ -45,7 +46,9 @@ async def get_ai_config():
 
 
 @router.post("/config", response_model=DataResponse)
-async def update_ai_config(request: AIConfigRequest):
+async def update_ai_config(
+    request: AIConfigRequest, session: AsyncSession = Depends(get_session)
+):
     """
     Update AI configuration
 
@@ -58,17 +61,15 @@ async def update_ai_config(request: AIConfigRequest):
         Updated configuration (without API key)
     """
     try:
-        manager = AIConfigManager.get_instance()
-
-        # Update configuration with provided values
-        manager.update_config(
+        await ai_config_manager.update_config(
+            session,
             api_key=request.api_key,
             model=request.model,
             base_url=request.base_url,
             enabled=request.enabled
         )
 
-        config = manager.get_config()
+        config = await ai_config_manager.get_config(session)
 
         response_data = AIConfigResponse(
             model=config.model,
@@ -91,7 +92,7 @@ async def update_ai_config(request: AIConfigRequest):
 
 
 @router.post("/test", response_model=DataResponse)
-async def test_ai_connection():
+async def test_ai_connection(session: AsyncSession = Depends(get_session)):
     """
     Test AI API connection and authentication
 
@@ -101,15 +102,13 @@ async def test_ai_connection():
         Test result
     """
     try:
-        manager = AIConfigManager.get_instance()
-
-        if not manager.is_configured():
+        if not await ai_config_manager.is_configured(session):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="AI is not configured. Please set API key and enable AI first."
             )
 
-        config = manager.get_config()
+        config = await ai_config_manager.get_config(session)
         client = AIClient(config.api_key, config.model, config.base_url)
 
         success = await client.test_connection()

@@ -5,10 +5,22 @@ FastAPI Application Entry Point
 Questionnaire Automation REST API Service.
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from db.session import init_engine, close_engine
 from .routers import questionnaire, ai
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: create the DB engine/connection pool once for the app lifetime
+    init_engine()
+    yield
+    # Shutdown: dispose the connection pool
+    await close_engine()
 
 
 # Create FastAPI application
@@ -17,7 +29,8 @@ app = FastAPI(
     description="Provides questionnaire analysis, batch submission and reverse item detection",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
+    lifespan=lifespan,
 )
 
 # Configure CORS (allow cross-origin requests)
@@ -64,6 +77,19 @@ async def health_check():
     Health check endpoint
 
     Returns:
-        Service status
+        Service status, including database connectivity
     """
-    return {"status": "healthy", "service": "questionnaire-automation-api"}
+    from db.session import check_connection
+
+    db_status = "unknown"
+    try:
+        await check_connection()
+        db_status = "ok"
+    except Exception as e:
+        db_status = f"error: {e}"
+
+    return {
+        "status": "healthy",
+        "service": "questionnaire-automation-api",
+        "database": db_status,
+    }

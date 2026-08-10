@@ -59,12 +59,13 @@ class QuestionResponse(BaseModel):
     is_reverse: bool = Field(False, description="是否反向题")
     reverse_confidence: Optional[float] = Field(None, description="反向题置信度")
     detection_method: Optional[str] = Field(None, description="检测方法（ai 或 keyword）")
-    positive_values: Optional[List[str]] = Field(None, description="积极态度对应的选项值列表")
-    negative_values: Optional[List[str]] = Field(None, description="消极态度对应的选项值列表")
+    positive_values: Optional[List[Any]] = Field(None, description="积极态度对应的选项值列表")
+    negative_values: Optional[List[Any]] = Field(None, description="消极态度对应的选项值列表")
 
 
 class AnalyzeResponse(BaseModel):
     """问卷分析响应"""
+    task_id: str = Field(..., description="任务ID（已落库，submit接口凭此ID提交，无需重新传url分析）")
     activity_id: str = Field(..., description="活动ID")
     url: str = Field(..., description="问卷URL")
     total_questions: int = Field(..., description="题目总数")
@@ -95,8 +96,12 @@ class SubmitConfig(BaseModel):
 
 
 class SubmitRequest(BaseModel):
-    """问卷提交请求"""
-    url: HttpUrl = Field(..., description="问卷URL")
+    """问卷提交请求
+
+    task_id 对应 analyze_questionnaire 返回的任务ID。提交时直接读取该任务
+    落库的 analyzed_schema 生成答案，不会重新访问问卷页面或重新分析。
+    """
+    task_id: str = Field(..., description="任务ID（由 /analyze 接口返回）")
     count: int = Field(..., ge=1, le=1000, description="提交份数（1-1000）")
     mode: Literal["random", "high_reliability"] = Field(
         ...,
@@ -126,6 +131,7 @@ class SubmitResult(BaseModel):
 class TaskStatusResponse(BaseModel):
     """任务状态响应"""
     task_id: str = Field(..., description="任务ID")
+    url: Optional[str] = Field(None, description="问卷URL")
     status: Literal["pending", "processing", "completed", "failed"] = Field(..., description="任务状态")
     submitted: int = Field(0, description="已提交成功数")
     failed: int = Field(0, description="失败数")

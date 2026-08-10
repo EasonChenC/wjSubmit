@@ -14,6 +14,8 @@ import re
 from typing import List, Tuple, Dict
 from dataclasses import dataclass
 
+from utils.scale_utils import split_scale_values, extract_option_values
+
 
 @dataclass
 class ReversePattern:
@@ -140,6 +142,19 @@ class ReverseItemDetector:
     def batch_detect(self, questions: List) -> Dict[str, Tuple[bool, float, List[str]]]:
         """批量检测反向题
 
+        RATING/NPS/MATRIX为天然量表题（is_scale=True），据此推导
+        positive_values/negative_values/neutral_values。
+        RADIO题是否为量表题无法仅凭关键词判断（如"就餐时段"这类选项虽为数字
+        编码但并非强度量表），因此保持原有行为：只做反向检测，不强制标记
+        is_scale，交由AI识别决定。
+
+        写入Question.metadata：
+        - is_scale: 是否为量表题（RADIO默认不设置，保持False语义）
+        - is_reverse: 是否为反向题（默认False，即正向）
+        - reverse_confidence / reverse_keywords: 检测依据
+        - positive_values / negative_values / neutral_values: 推导出的态度值（仅量表题）
+        - detection_method: 'keyword'
+
         Args:
             questions: Question对象列表
 
@@ -147,20 +162,31 @@ class ReverseItemDetector:
             Dict[question_id, (is_reverse, confidence, keywords)]
         """
         results = {}
+        native_scale_types = {'rating', 'nps', 'matrix'}
 
         for q in questions:
-            # 只处理量表题
-            if q.type.value not in ['rating', 'nps', 'matrix', 'radio']:
+            if q.type.value not in native_scale_types | {'radio'}:
                 continue
 
             is_rev, conf, keywords = self.detect(q.label)
             results[q.id] = (is_rev, conf, keywords)
 
-            # 更新Question的metadata
-            if is_rev:
-                q.metadata['is_reverse'] = True
-                q.metadata['reverse_confidence'] = conf
-                q.metadata['reverse_keywords'] = keywords
+            q.metadata['detection_method'] = 'keyword'
+            q.metadata['is_reverse'] = is_rev
+            q.metadata['reverse_confidence'] = conf
+            q.metadata['reverse_keywords'] = keywords
+
+            if q.type.value in native_scale_types:
+                option_values = extract_option_values(q.options)
+                positive, negative, neutral = split_scale_values(option_values, is_reverse=is_rev)
+
+                q.metadata['is_scale'] = True
+                q.metadata['positive_values'] = positive
+                q.metadata['negative_values'] = negative
+                q.metadata['neutral_values'] = neutral
+            else:
+                # RADIO: 是否为量表题交由AI判断，关键字模式下保持默认False
+                q.metadata.setdefault('is_scale', False)
 
         return results
 

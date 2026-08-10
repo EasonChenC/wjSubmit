@@ -3,15 +3,21 @@
 Questionnaire routing module
 
 Provides questionnaire analysis, submission, and reverse item detection APIs.
+
+Flow: analyze_questionnaire fetches+analyzes a questionnaire and persists the
+resulting QuestionnaireSchema into questionnaire_tasks.analyzed_schema
+(JSONB), returning a task_id. submit_questionnaire takes that task_id and
+generates answers directly from the stored schema — the page is never
+re-visited or re-analyzed at submit time.
 """
 
 import asyncio
 import random
-import uuid
-from datetime import datetime
-from typing import Dict
-from fastapi import APIRouter, BackgroundTasks, HTTPException, status
+from datetime import datetime, timezone
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from playwright.async_api import async_playwright
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import (
     AnalyzeRequest, DataResponse, AnalyzeResponse, QuestionResponse,
@@ -22,34 +28,36 @@ from core.rule_based_analyzer import RuleBasedAnalyzer
 from core.dynamic_answer_generator import DynamicAnswerGenerator
 from core.dynamic_submitter import DynamicSubmitter
 from core.reverse_item_detector import ReverseItemDetector
-from core.schema import QuestionType
-from ai.config import AIConfigManager
+from core.schema import QuestionType, QuestionnaireSchema
+from ai import ai_config_manager
 from ai.client import AIClient
 from ai.reverse_detector import override_schema_with_ai_detection
+from db.session import get_session, session_scope
+from db.models import QuestionnaireTask, TaskSubmission
 
 
 router = APIRouter(prefix="/api/questionnaire", tags=["questionnaire"])
-
-# Global task storage (use Redis in production)
-tasks: Dict[str, dict] = {}
 
 
 # ========== Questionnaire Analysis API ==========
 
 @router.post("/analyze", response_model=DataResponse)
-async def analyze_questionnaire(request: AnalyzeRequest):
+async def analyze_questionnaire(
+    request: AnalyzeRequest, session: AsyncSession = Depends(get_session)
+):
     """
     Analyze questionnaire structure
 
-    Fetch questionnaire HTML by URL and parse its structure,
-    returning question list, question type statistics, etc.
-    Optionally uses AI to detect reverse items if enabled.
+    Fetch questionnaire HTML by URL and parse its structure, persist the
+    result to questionnaire_tasks, and return question list, statistics,
+    and a task_id. Use that task_id with /submit — no need to pass the URL
+    again or re-analyze the page.
 
     Args:
         request: Request containing questionnaire URL and use_ai flag
 
     Returns:
-        Questionnaire analysis result
+        Questionnaire analysis result (includes task_id)
     """
     try:
         # 1. Use Playwright to fetch HTML
@@ -67,19 +75,26 @@ async def analyze_questionnaire(request: AnalyzeRequest):
         analyzer = RuleBasedAnalyzer()
         schema = analyzer.analyze(html, str(request.url))
 
-        # 3. AI detection (optional)
+        # 3. Reverse item + scale detection
         detection_method = "keyword"
         if request.use_ai:
-            manager = AIConfigManager.get_instance()
-            if not manager.is_configured():
+            if not await ai_config_manager.is_configured(session):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="AI is not configured. Please configure AI settings first."
                 )
-            config = manager.get_config()
+            config = await ai_config_manager.get_config(session)
             client = AIClient(config.api_key, config.model, config.base_url)
             await override_schema_with_ai_detection(schema, client)
             detection_method = "ai"
+        else:
+            # No AI: use keyword-based detector to set is_scale/is_reverse
+            # and derive positive_values/negative_values for RATING/NPS/MATRIX
+            detector = ReverseItemDetector()
+            detector.batch_detect(schema.questions)
+            schema.metadata['reverse_items'] = [
+                q.id for q in schema.questions if q.metadata.get('is_reverse')
+            ]
 
         # 4. Convert to API response format
         scale_types = [QuestionType.RATING, QuestionType.NPS, QuestionType.MATRIX]
@@ -107,15 +122,33 @@ async def analyze_questionnaire(request: AnalyzeRequest):
         scale_questions_count = sum(
             1 for q in schema.questions if (q.type in scale_types or q.metadata.get('is_scale', False))
         )
+        reverse_items = schema.metadata.get('reverse_items', [])
+
+        # 5. Persist analyzed schema as a new task (status=pending, no submit
+        # config yet — that's filled in by /submit)
+        task_row = QuestionnaireTask(
+            url=str(request.url),
+            activity_id=schema.activity_id,
+            platform=schema.platform,
+            analyzed_schema=schema.to_dict(),
+            detection_method=detection_method,
+            total_questions=schema.metadata.get('total_questions', len(schema.questions)),
+            scale_questions=scale_questions_count,
+            reverse_items=reverse_items,
+            status="pending",
+        )
+        session.add(task_row)
+        await session.commit()
 
         response_data = AnalyzeResponse(
+            task_id=str(task_row.id),
             activity_id=schema.activity_id,
             url=schema.url,
             total_questions=schema.metadata['total_questions'],
             question_types=schema.metadata['identified_types'],
             questions=questions_data,
             scale_questions=scale_questions_count,
-            reverse_items=schema.metadata.get('reverse_items', []),
+            reverse_items=reverse_items,
             detection_method=detection_method
         )
 
@@ -149,7 +182,7 @@ async def submit_one_questionnaire(url: str, schema, answers: dict) -> dict:
         Submission result: {'success': True/False, 'error': 'error message'}
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, slow_mo=1)
+        browser = await p.chromium.launch(headless=False, slow_mo=100)
         page = await browser.new_page()
 
         try:
@@ -170,150 +203,155 @@ async def submit_one_questionnaire(url: str, schema, answers: dict) -> dict:
             await browser.close()
 
 
-async def submit_questionnaire_task(
-    task_id: str, url: str, count: int, mode: str, config: dict
-):
+async def submit_questionnaire_task(task_id: str, count: int, mode: str, config: dict):
     """
     Background task: batch submit questionnaires
 
+    Reads the previously analyzed schema from questionnaire_tasks.analyzed_schema
+    (populated by analyze_questionnaire) and generates answers directly from it.
+    The questionnaire page is never re-visited for analysis here.
+
     Args:
-        task_id: Task ID
-        url: Questionnaire URL
+        task_id: questionnaire_tasks.id (as string)
         count: Number of submissions
         mode: Submission mode
         config: Mode configuration
     """
-    try:
-        tasks[task_id]["status"] = "processing"
+    async with session_scope() as session:
+        task_row = await session.get(QuestionnaireTask, task_id)
+        if task_row is None:
+            return
 
-        # 1. Analyze questionnaire
-        async with async_playwright() as p:
-            browser = await p.chromium.launch(headless=False)
-            page = await browser.new_page()
+        try:
+            task_row.status = "processing"
+            task_row.submit_mode = mode
+            task_row.attitude = config.get("attitude", "positive")
+            task_row.add_variation = config.get("add_variation", False)
+            task_row.variation_ratio = config.get("variation_ratio", 0.05)
+            task_row.total_count = count
+            task_row.started_at = datetime.now(timezone.utc)
+            await session.commit()
 
-            try:
-                await page.goto(url, wait_until='networkidle', timeout=30000)
-                html = await page.content()
-            finally:
-                await browser.close()
+            # Rebuild schema from the stored analysis — no re-fetch/re-analyze
+            schema: QuestionnaireSchema = QuestionnaireSchema.from_dict(task_row.analyzed_schema)
+            url = task_row.url
 
-        analyzer = RuleBasedAnalyzer()
-        schema = analyzer.analyze(html, url)
+            generator = DynamicAnswerGenerator(
+                schema=schema,
+                mode=mode,
+                attitude=config.get("attitude", "positive"),
+                add_variation=config.get("add_variation", False),
+                variation_ratio=config.get("variation_ratio", 0.05)
+            )
 
-        # 2. Create answer generator
-        generator = DynamicAnswerGenerator(
-            schema=schema,
-            high_reliability_mode=(mode == "high_reliability"),
-            attitude=config.get("attitude", "positive"),
-            add_variation=config.get("add_variation", False),
-            variation_ratio=config.get("variation_ratio", 0.05)
-        )
+            success_count = 0
+            fail_count = 0
 
-        # 3. Batch submit
-        success_count = 0
-        fail_count = 0
+            for i in range(count):
+                submission = TaskSubmission(
+                    task_id=task_row.id,
+                    submit_index=i + 1,
+                    status="pending",
+                    started_at=datetime.now(timezone.utc),
+                )
+                session.add(submission)
 
-        for i in range(count):
-            try:
-                # Generate answers
-                answers = generator.generate_answers()
+                try:
+                    answers = generator.generate_answers()
+                    result = await submit_one_questionnaire(url, schema, answers)
 
-                # Submit questionnaire
-                result = await submit_one_questionnaire(url, schema, answers)
+                    if result.get('success'):
+                        success_count += 1
+                        submission.status = "success"
+                    else:
+                        fail_count += 1
+                        submission.status = "failed"
+                        submission.error_message = result.get('error', 'Unknown error')
 
-                if result.get('success'):
-                    success_count += 1
-                    tasks[task_id]["results"].append({
-                        "index": i + 1,
-                        "status": "success"
-                    })
-                else:
+                    submission.generated_answers = answers
+
+                except Exception as e:
                     fail_count += 1
-                    tasks[task_id]["results"].append({
-                        "index": i + 1,
-                        "status": "failed",
-                        "error": result.get('error', 'Unknown error')
-                    })
+                    submission.status = "failed"
+                    submission.error_message = str(e)
 
-                # Update progress
-                tasks[task_id]["submitted"] = success_count
-                tasks[task_id]["failed"] = fail_count
-                tasks[task_id]["progress"] = int((i + 1) / count * 100)
+                submission.finished_at = datetime.now(timezone.utc)
 
-                # Delay (avoid requests too fast)
+                task_row.submitted_count = success_count
+                task_row.failed_count = fail_count
+                task_row.progress = int((i + 1) / count * 100)
+                await session.commit()
+
                 if i < count - 1:
                     await asyncio.sleep(random.uniform(3, 5))
 
-            except Exception as e:
-                fail_count += 1
-                tasks[task_id]["results"].append({
-                    "index": i + 1,
-                    "status": "failed",
-                    "error": str(e)
-                })
-                tasks[task_id]["failed"] = fail_count
+            task_row.status = "completed"
+            task_row.finished_at = datetime.now(timezone.utc)
+            await session.commit()
 
-        # 4. Complete
-        tasks[task_id]["status"] = "completed"
-        tasks[task_id]["end_time"] = datetime.now().isoformat()
-
-    except Exception as e:
-        tasks[task_id]["status"] = "failed"
-        tasks[task_id]["end_time"] = datetime.now().isoformat()
-        tasks[task_id]["error"] = str(e)
+        except Exception as e:
+            task_row.status = "failed"
+            task_row.error_message = str(e)
+            task_row.finished_at = datetime.now(timezone.utc)
+            await session.commit()
 
 
 @router.post("/submit", response_model=DataResponse)
-async def submit_questionnaire(request: SubmitRequest, background_tasks: BackgroundTasks):
+async def submit_questionnaire(
+    request: SubmitRequest,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+):
     """
     Submit questionnaire (background task)
 
-    Create a background task for batch questionnaire submission.
+    Looks up the task created by /analyze via task_id and kicks off batch
+    submission in the background, generating answers from the schema that
+    was already analyzed and persisted — no re-analysis happens here.
 
     Args:
-        request: Submit request
+        request: Submit request (task_id + count/mode/config)
         background_tasks: FastAPI background task manager
 
     Returns:
         Task ID and initial status
     """
     try:
-        # Generate task ID
-        task_id = f"task_{datetime.now().strftime('%Y%m%d_%H%M%S')}_{uuid.uuid4().hex[:6]}"
+        task_row = await session.get(QuestionnaireTask, request.task_id)
+        if task_row is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Task not found: {request.task_id}. Call /analyze first."
+            )
 
-        # Initialize task status
-        tasks[task_id] = {
-            "task_id": task_id,
-            "status": "pending",
-            "submitted": 0,
-            "failed": 0,
-            "total": request.count,
-            "progress": 0,
-            "start_time": datetime.now().isoformat(),
-            "end_time": None,
-            "results": []
-        }
-
-        # Get config (handle None value)
         config = request.config.dict() if request.config else {}
 
-        # Add background task
+        task_row.status = "pending"
+        task_row.submit_mode = request.mode
+        task_row.total_count = request.count
+        task_row.attitude = config.get("attitude", "positive")
+        task_row.add_variation = config.get("add_variation", False)
+        task_row.variation_ratio = config.get("variation_ratio", 0.05)
+        await session.commit()
+
         background_tasks.add_task(
             submit_questionnaire_task,
-            task_id, str(request.url), request.count, request.mode, config
+            request.task_id, request.count, request.mode, config
         )
 
         return DataResponse(
             success=True,
             message="Task created, processing in background",
             data={
-                "task_id": task_id,
+                "task_id": request.task_id,
                 "status": "processing",
                 "submitted": 0,
                 "total": request.count
             }
         )
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -322,7 +360,7 @@ async def submit_questionnaire(request: SubmitRequest, background_tasks: Backgro
 
 
 @router.get("/submit/{task_id}", response_model=DataResponse)
-async def get_task_status(task_id: str):
+async def get_task_status(task_id: str, session: AsyncSession = Depends(get_session)):
     """
     Query task status
 
@@ -332,16 +370,40 @@ async def get_task_status(task_id: str):
     Returns:
         Task status information
     """
-    if task_id not in tasks:
+    task_row = await session.get(QuestionnaireTask, task_id)
+    if task_row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Task not found: {task_id}"
         )
 
-    task_data = tasks[task_id]
+    result = await session.execute(
+        select(TaskSubmission)
+        .where(TaskSubmission.task_id == task_row.id)
+        .order_by(TaskSubmission.submit_index)
+    )
+    submissions = result.scalars().all()
 
-    # Convert to response model
-    response_data = TaskStatusResponse(**task_data)
+    response_data = TaskStatusResponse(
+        task_id=str(task_row.id),
+        url=task_row.url,
+        status=task_row.status,
+        submitted=task_row.submitted_count,
+        failed=task_row.failed_count,
+        total=task_row.total_count,
+        progress=task_row.progress,
+        start_time=(task_row.started_at or task_row.created_at).isoformat(),
+        end_time=task_row.finished_at.isoformat() if task_row.finished_at else None,
+        results=[
+            SubmitResult(
+                index=s.submit_index,
+                status=s.status,
+                error=s.error_message,
+            )
+            for s in submissions
+            if s.status in ("success", "failed")  # skip in-flight "pending" rows
+        ],
+    )
 
     return DataResponse(
         success=True,
