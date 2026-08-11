@@ -52,5 +52,7 @@ screenshots/
 # Environment variables
 .env
 .env.local
+
+.browser_profiles/
 # Frontend dependencies
 frontend/node_modules/
