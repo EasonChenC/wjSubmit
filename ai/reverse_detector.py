@@ -82,7 +82,12 @@ async def override_schema_with_ai_detection(schema: QuestionnaireSchema,
             for q in all_analysis_questions
         ]
 
+        title = schema.metadata.get('title', '')
+        description = schema.metadata.get('description', '')
+
         user_message = prompt_template.format(
+            title=title,
+            description=description,
             questions_json=json.dumps(questions_data, ensure_ascii=False, indent=2)
         )
 

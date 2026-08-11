@@ -50,6 +50,10 @@ class RuleBasedAnalyzer:
         # 识别平台
         platform = self._detect_platform(soup, url)
 
+        # 提取问卷标题与介绍（问卷背景信息，影响量表题正反向判断）
+        title = self._extract_title(soup)
+        description = self._extract_description(soup)
+
         # 提取所有题目
         questions = self._extract_questions(soup)
 
@@ -62,10 +66,51 @@ class RuleBasedAnalyzer:
             metadata={
                 'total_questions': len(questions),
                 'identified_types': self._count_types(questions),
+                'title': title,
+                'description': description,
             }
         )
 
         return schema
+
+    def _extract_title(self, soup: BeautifulSoup) -> str:
+        """提取问卷标题
+
+        问卷星将标题渲染在 <h1 class="htitle" id="htitle">，
+        取不到时回退到 <title> 标签。
+
+        Args:
+            soup: BeautifulSoup对象
+
+        Returns:
+            问卷标题文本，未找到返回空字符串
+        """
+        h1 = soup.find('h1', class_='htitle') or soup.find(id='htitle')
+        if h1:
+            return h1.get_text(strip=True)
+
+        if soup.title:
+            return soup.title.get_text(strip=True)
+
+        return ""
+
+    def _extract_description(self, soup: BeautifulSoup) -> str:
+        """提取问卷介绍/说明文字
+
+        问卷星将介绍渲染在 <div id="divDesc"><span class="description">...</span></div>，
+        内容可能是多个<p>段落，也可能是不带标签的纯文本。
+
+        Args:
+            soup: BeautifulSoup对象
+
+        Returns:
+            问卷介绍文本，未找到返回空字符串
+        """
+        desc_span = soup.find('span', class_='description')
+        if desc_span:
+            return desc_span.get_text(separator='\n', strip=True)
+
+        return ""
 
     def _extract_activity_id(self, url: str) -> str:
         """从URL中提取活动ID
@@ -184,7 +229,7 @@ class RuleBasedAnalyzer:
                 selector = self._generate_selector(question_id, question_type)
 
                 # 生成答案策略
-                strategy = self._generate_strategy(question_type, options)
+                strategy = self._generate_strategy(question_type, options, div=div)
 
                 # 判断是否必填
                 required = self._is_required(div)
@@ -973,12 +1018,14 @@ class RuleBasedAnalyzer:
             special_handling=None
         )
 
-    def _generate_strategy(self, question_type: QuestionType, options: List[Any]) -> AnswerStrategy:
+    def _generate_strategy(self, question_type: QuestionType, options: List[Any],
+                            div: Optional[Tag] = None) -> AnswerStrategy:
         """生成答案策略
 
         Args:
             question_type: 题型
             options: 选项列表
+            div: 题目div元素（用于读取多选题的 minvalue/maxvalue 限制）
 
         Returns:
             AnswerStrategy对象
@@ -1003,10 +1050,32 @@ class RuleBasedAnalyzer:
                 strategy.params['weights'] = [1.0 / num_options] * num_options
 
             elif question_type == QuestionType.CHECKBOX:
-                # 多选题：根据选项数量调整抽样范围
+                # 多选题：默认抽样范围先按选项数量给出宽松上下限
                 num_options = len(options)
-                strategy.params['min'] = min(2, num_options)
-                strategy.params['max'] = min(4, num_options)
+                min_choices = min(2, num_options)
+                max_choices = min(4, num_options)
+
+                # 问卷星在题目容器上通过 minvalue/maxvalue 属性硬性限制
+                # 最少/最多可选数量（如 minvalue="1" maxvalue="3"），必须遵守，
+                # 否则提交时页面会报"最多选X项"导致流程卡住
+                if div is not None:
+                    raw_min = div.get('minvalue')
+                    raw_max = div.get('maxvalue')
+
+                    if raw_min is not None:
+                        try:
+                            min_choices = max(1, min(int(raw_min), num_options))
+                        except ValueError:
+                            pass
+
+                    if raw_max is not None:
+                        try:
+                            max_choices = max(min_choices, min(int(raw_max), num_options))
+                        except ValueError:
+                            pass
+
+                strategy.params['min'] = min_choices
+                strategy.params['max'] = max_choices
 
             return strategy
 
@@ -1052,6 +1121,19 @@ class RuleBasedAnalyzer:
             other_input = div.find('input', attrs={'id': re.compile(r'tqq\d+_\d+')})
             if other_input:
                 metadata['other_text_id'] = other_input.get('id')
+
+                # 通过 rel 属性找到对应的"其他"checkbox本身，记录其选项value，
+                # 供答案生成时默认排除该选项（不勾选"其他"，避免必须额外填写说明文本）
+                rel_attr = other_input.get('rel')  # 如 "q9_9"
+                if rel_attr:
+                    other_checkbox = div.find('input', attrs={'type': 'checkbox', 'id': rel_attr})
+                    if other_checkbox:
+                        raw_value = other_checkbox.get('value')
+                        if raw_value is not None:
+                            try:
+                                metadata['other_option_value'] = int(raw_value)
+                            except ValueError:
+                                metadata['other_option_value'] = raw_value
 
         # 只读文本输入框
         if question_type == QuestionType.TEXT:

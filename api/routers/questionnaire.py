@@ -128,6 +128,7 @@ async def analyze_questionnaire(
         # config yet — that's filled in by /submit)
         task_row = QuestionnaireTask(
             url=str(request.url),
+            title=schema.metadata.get('title') or None,
             activity_id=schema.activity_id,
             platform=schema.platform,
             analyzed_schema=schema.to_dict(),
@@ -144,6 +145,8 @@ async def analyze_questionnaire(
             task_id=str(task_row.id),
             activity_id=schema.activity_id,
             url=schema.url,
+            title=schema.metadata.get('title', ''),
+            description=schema.metadata.get('description', ''),
             total_questions=schema.metadata['total_questions'],
             question_types=schema.metadata['identified_types'],
             questions=questions_data,
@@ -387,6 +390,7 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
     response_data = TaskStatusResponse(
         task_id=str(task_row.id),
         url=task_row.url,
+        title=task_row.title,
         status=task_row.status,
         submitted=task_row.submitted_count,
         failed=task_row.failed_count,

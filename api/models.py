@@ -68,6 +68,8 @@ class AnalyzeResponse(BaseModel):
     task_id: str = Field(..., description="任务ID（已落库，submit接口凭此ID提交，无需重新传url分析）")
     activity_id: str = Field(..., description="活动ID")
     url: str = Field(..., description="问卷URL")
+    title: str = Field("", description="问卷标题")
+    description: str = Field("", description="问卷介绍/说明")
     total_questions: int = Field(..., description="题目总数")
     question_types: Dict[str, int] = Field(default_factory=dict, description="题型统计")
     questions: List[QuestionResponse] = Field(default_factory=list, description="题目列表")
@@ -132,6 +134,7 @@ class TaskStatusResponse(BaseModel):
     """任务状态响应"""
     task_id: str = Field(..., description="任务ID")
     url: Optional[str] = Field(None, description="问卷URL")
+    title: Optional[str] = Field(None, description="问卷标题")
     status: Literal["pending", "processing", "completed", "failed"] = Field(..., description="任务状态")
     submitted: int = Field(0, description="已提交成功数")
     failed: int = Field(0, description="失败数")

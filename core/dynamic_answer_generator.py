@@ -207,23 +207,30 @@ class DynamicAnswerGenerator:
         """
         option_values = self._extract_option_values(question.options)
 
+        # 默认不勾选"其他"选项：勾选后问卷星会要求必须填写说明文本，
+        # 自动化填写无法保证内容合理，因此从可抽样池中剔除该选项
+        other_value = question.metadata.get('other_option_value')
+        sampleable_values = [v for v in option_values if v != other_value] if other_value is not None else option_values
+        if not sampleable_values:
+            sampleable_values = option_values
+
         if strategy.type == "random_sample":
             min_choices = strategy.params.get('min', 2)
             max_choices = strategy.params.get('max', 4)
 
-            # 确保范围合法
-            min_choices = max(1, min(min_choices, len(option_values)))
-            max_choices = max(min_choices, min(max_choices, len(option_values)))
+            # 确保范围合法（基于剔除"其他"后的可选池）
+            min_choices = max(1, min(min_choices, len(sampleable_values)))
+            max_choices = max(min_choices, min(max_choices, len(sampleable_values)))
 
             # 随机选择数量
             num_choices = random.randint(min_choices, max_choices)
 
             # 随机抽样
-            return sorted(random.sample(option_values, num_choices))
+            return sorted(random.sample(sampleable_values, num_choices))
 
         # 默认：随机选择2-3个
-        num_choices = random.randint(2, min(3, len(option_values)))
-        return sorted(random.sample(option_values, num_choices))
+        num_choices = random.randint(2, min(3, len(sampleable_values)))
+        return sorted(random.sample(sampleable_values, num_choices))
 
     def _generate_select_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成下拉选择题答案

@@ -139,6 +139,7 @@ class QuestionnaireTask(Base):
     )
 
     url: Mapped[str] = mapped_column(String(500), nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String(500))
     activity_id: Mapped[Optional[str]] = mapped_column(String(128))
     platform: Mapped[Optional[str]] = mapped_column(String(32))
 

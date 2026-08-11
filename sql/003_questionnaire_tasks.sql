@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
 
     -- 问卷来源信息
     url                 VARCHAR(500) NOT NULL,
+    title               VARCHAR(500),                -- 问卷标题，如 "员工副业意向调查问卷"
     activity_id         VARCHAR(128),               -- 从URL解析出的问卷活动ID，如 "eLeS3jD"
     platform            VARCHAR(32),                 -- wjx / wjcn / tencent / unknown
 
@@ -72,5 +73,6 @@ CREATE TRIGGER trg_questionnaire_tasks_updated_at
     EXECUTE FUNCTION set_updated_at();
 
 COMMENT ON TABLE questionnaire_tasks IS '问卷任务表：analyze阶段的完整schema落地存储，submit阶段直接复用，不重新分析';
+COMMENT ON COLUMN questionnaire_tasks.title IS '问卷标题，从HTML <h1 class="htitle"> 提取';
 COMMENT ON COLUMN questionnaire_tasks.analyzed_schema IS '完整问卷结构（含量表识别/正反向题/positive_values/negative_values），是生成答案的唯一依据';
 COMMENT ON COLUMN questionnaire_tasks.detection_method IS '该次分析使用的检测方式：keyword(关键字) 或 ai';
