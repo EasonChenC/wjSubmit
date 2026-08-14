@@ -95,6 +95,10 @@ class SubmitConfig(BaseModel):
         le=0.30,
         description="变化比例（0.01-0.30）"
     )
+    debug: bool = Field(
+        False,
+        description="是否开启浏览器调试模式（显示浏览器窗口，便于观察填写过程）；关闭则以无头模式后台提交"
+    )
 
 
 class SubmitRequest(BaseModel):
@@ -135,7 +139,7 @@ class TaskStatusResponse(BaseModel):
     task_id: str = Field(..., description="任务ID")
     url: Optional[str] = Field(None, description="问卷URL")
     title: Optional[str] = Field(None, description="问卷标题")
-    status: Literal["pending", "processing", "completed", "failed"] = Field(..., description="任务状态")
+    status: Literal["pending", "processing", "completed", "failed", "cancelled"] = Field(..., description="任务状态")
     submitted: int = Field(0, description="已提交成功数")
     failed: int = Field(0, description="失败数")
     total: int = Field(..., description="总数")

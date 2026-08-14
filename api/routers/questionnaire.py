@@ -172,7 +172,7 @@ async def analyze_questionnaire(
 
 # ========== Questionnaire Submission API ==========
 
-async def submit_one_questionnaire(url: str, schema, answers: dict) -> dict:
+async def submit_one_questionnaire(url: str, schema, answers: dict, headless: bool = True) -> dict:
     """
     Submit one questionnaire
 
@@ -180,12 +180,15 @@ async def submit_one_questionnaire(url: str, schema, answers: dict) -> dict:
         url: Questionnaire URL
         schema: Questionnaire Schema
         answers: Answer dictionary
+        headless: Whether to run the browser headless. False opens a visible
+            browser window (debug mode), driven by SubmitConfig.debug from the
+            frontend's submit form toggle.
 
     Returns:
         Submission result: {'success': True/False, 'error': 'error message'}
     """
     async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False, slow_mo=100)
+        browser = await p.chromium.launch(headless=headless, slow_mo=100 if not headless else 0)
         page = await browser.new_page()
 
         try:
@@ -249,8 +252,18 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
 
             success_count = 0
             fail_count = 0
+            headless = not config.get("debug", False)
+            cancelled = False
 
             for i in range(count):
+                # Refresh from DB to pick up a cancel_requested flag set by
+                # the /submit/{task_id}/cancel endpoint from another request —
+                # this long-lived session otherwise never sees that commit.
+                await session.refresh(task_row)
+                if task_row.cancel_requested:
+                    cancelled = True
+                    break
+
                 submission = TaskSubmission(
                     task_id=task_row.id,
                     submit_index=i + 1,
@@ -261,7 +274,7 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
 
                 try:
                     answers = generator.generate_answers()
-                    result = await submit_one_questionnaire(url, schema, answers)
+                    result = await submit_one_questionnaire(url, schema, answers, headless=headless)
 
                     if result.get('success'):
                         success_count += 1
@@ -288,11 +301,15 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
                 if i < count - 1:
                     await asyncio.sleep(random.uniform(3, 5))
 
-            task_row.status = "completed"
+            if cancelled:
+                task_row.status = "cancelled"
+            else:
+                task_row.status = "completed"
             task_row.finished_at = datetime.now(timezone.utc)
             await session.commit()
 
         except Exception as e:
+            await session.rollback()
             task_row.status = "failed"
             task_row.error_message = str(e)
             task_row.finished_at = datetime.now(timezone.utc)
@@ -335,6 +352,7 @@ async def submit_questionnaire(
         task_row.attitude = config.get("attitude", "positive")
         task_row.add_variation = config.get("add_variation", False)
         task_row.variation_ratio = config.get("variation_ratio", 0.05)
+        task_row.cancel_requested = False
         await session.commit()
 
         background_tasks.add_task(
@@ -413,6 +431,46 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
         success=True,
         message="Task status retrieved successfully",
         data=response_data
+    )
+
+
+@router.post("/submit/{task_id}/cancel", response_model=DataResponse)
+async def cancel_task(task_id: str, session: AsyncSession = Depends(get_session)):
+    """
+    Stop a running task
+
+    Sets cancel_requested on the task row. The background submission loop in
+    submit_questionnaire_task polls this flag before starting each new
+    submission and stops gracefully once it sees it — an in-flight submission
+    (browser already open, mid-fill) is allowed to finish rather than being
+    killed outright. Only tasks in 'pending' or 'processing' can be cancelled.
+
+    Args:
+        task_id: Task ID
+
+    Returns:
+        Updated task status
+    """
+    task_row = await session.get(QuestionnaireTask, task_id)
+    if task_row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Task not found: {task_id}"
+        )
+
+    if task_row.status not in ("pending", "processing"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Task is already '{task_row.status}' and cannot be cancelled"
+        )
+
+    task_row.cancel_requested = True
+    await session.commit()
+
+    return DataResponse(
+        success=True,
+        message="Stop requested, task will stop after the current submission finishes",
+        data={"task_id": str(task_row.id), "status": task_row.status}
     )
 
 

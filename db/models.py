@@ -125,7 +125,7 @@ class QuestionnaireTask(Base):
             "attitude IN ('positive', 'negative')", name="ck_questionnaire_tasks_attitude"
         ),
         CheckConstraint(
-            "status IN ('pending', 'processing', 'completed', 'failed')",
+            "status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')",
             name="ck_questionnaire_tasks_status",
         ),
         CheckConstraint("progress BETWEEN 0 AND 100", name="ck_questionnaire_tasks_progress"),
@@ -160,6 +160,9 @@ class QuestionnaireTask(Base):
     failed_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     error_message: Mapped[Optional[str]] = mapped_column(Text)
+    cancel_requested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+                        # 由 /submit/{task_id}/cancel 置位；后台提交循环在每次迭代开始时
+                        # 轮询该字段（session.refresh），置位后优雅停止，不强行中断进行中的提交
 
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))

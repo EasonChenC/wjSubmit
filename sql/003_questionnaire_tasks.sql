@@ -37,12 +37,13 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
 
     -- 执行进度（对应 TaskStatusResponse）
     status              VARCHAR(16) NOT NULL DEFAULT 'pending'
-                        CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+                        CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),
     total_count         INTEGER NOT NULL DEFAULT 1,   -- 计划提交份数
     submitted_count     INTEGER NOT NULL DEFAULT 0,   -- 成功份数
     failed_count        INTEGER NOT NULL DEFAULT 0,   -- 失败份数
     progress            SMALLINT NOT NULL DEFAULT 0 CHECK (progress BETWEEN 0 AND 100),
     error_message       TEXT,                          -- 任务级致命错误（如页面无法访问）
+    cancel_requested    BOOLEAN NOT NULL DEFAULT FALSE, -- 停止任务请求标记，后台循环轮询该字段优雅停止
 
     started_at          TIMESTAMPTZ,
     finished_at          TIMESTAMPTZ,
@@ -74,5 +75,6 @@ CREATE TRIGGER trg_questionnaire_tasks_updated_at
 
 COMMENT ON TABLE questionnaire_tasks IS '问卷任务表：analyze阶段的完整schema落地存储，submit阶段直接复用，不重新分析';
 COMMENT ON COLUMN questionnaire_tasks.title IS '问卷标题，从HTML <h1 class="htitle"> 提取';
+COMMENT ON COLUMN questionnaire_tasks.cancel_requested IS '停止任务请求标记：置为TRUE后，后台提交循环在下一次迭代开始前检测到会优雅停止，状态置为cancelled';
 COMMENT ON COLUMN questionnaire_tasks.analyzed_schema IS '完整问卷结构（含量表识别/正反向题/positive_values/negative_values），是生成答案的唯一依据';
 COMMENT ON COLUMN questionnaire_tasks.detection_method IS '该次分析使用的检测方式：keyword(关键字) 或 ai';
