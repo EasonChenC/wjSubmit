@@ -18,6 +18,19 @@ CREATE TABLE IF NOT EXISTS task_submissions (
     -- 保留下来便于复盘"这次提交具体填了什么"，排查异常提交或统计答案分布
     generated_answers  JSONB,
 
+    -- 单份提交使用的脱敏代理执行记录，不保存代理用户名、密码或API签名
+    proxy_host                 VARCHAR(255),
+    proxy_port                 INTEGER,
+    proxy_requested_area       VARCHAR(64),
+    proxy_reported_location    VARCHAR(128),
+    proxy_city_code            VARCHAR(32),
+    proxy_carrier              VARCHAR(32),
+    proxy_exit_ip              VARCHAR(64),
+    proxy_remaining_seconds    INTEGER,
+    proxy_latency_ms           INTEGER,
+    proxy_attempts             SMALLINT NOT NULL DEFAULT 0,
+    failure_stage              VARCHAR(32),
+
     started_at      TIMESTAMPTZ,
     finished_at     TIMESTAMPTZ,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
@@ -33,3 +46,5 @@ CREATE INDEX IF NOT EXISTS idx_task_submissions_status
 
 COMMENT ON TABLE task_submissions IS '任务提交明细表：记录批量提交中每一份的执行状态与生成的答案';
 COMMENT ON COLUMN task_submissions.generated_answers IS '该份提交实际生成的答案字典，便于复盘和统计';
+COMMENT ON COLUMN task_submissions.proxy_host IS '代理主机/IP，不含认证信息';
+COMMENT ON COLUMN task_submissions.failure_stage IS '失败阶段，如proxy_acquire_context、business_submission';

@@ -34,6 +34,22 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
                         CHECK (attitude IN ('positive', 'negative')),
     add_variation       BOOLEAN NOT NULL DEFAULT FALSE,
     variation_ratio     NUMERIC(4, 3) NOT NULL DEFAULT 0.05,  -- 0.01 ~ 0.30
+    browser_debug       BOOLEAN NOT NULL DEFAULT FALSE,
+
+    -- 任务级代理策略。供应商凭据仍只从环境变量读取，不写数据库。
+    proxy_enabled       BOOLEAN NOT NULL DEFAULT FALSE,
+    proxy_provider      VARCHAR(32)
+                        CHECK (proxy_provider IS NULL OR proxy_provider IN ('kuaidaili')),
+    proxy_area          VARCHAR(64),
+    proxy_carrier       SMALLINT NOT NULL DEFAULT 0 CHECK (proxy_carrier BETWEEN 0 AND 3),
+    proxy_rotate_per_submission BOOLEAN NOT NULL DEFAULT TRUE,
+    proxy_dedup         BOOLEAN NOT NULL DEFAULT TRUE,
+    proxy_verify_exit   BOOLEAN NOT NULL DEFAULT TRUE,
+    proxy_location_match VARCHAR(16) NOT NULL DEFAULT 'relaxed'
+                        CHECK (proxy_location_match IN ('strict', 'relaxed')),
+    proxy_required      BOOLEAN NOT NULL DEFAULT TRUE,
+    proxy_max_acquire_attempts SMALLINT NOT NULL DEFAULT 3
+                        CHECK (proxy_max_acquire_attempts BETWEEN 1 AND 5),
 
     -- 执行进度（对应 TaskStatusResponse）
     status              VARCHAR(16) NOT NULL DEFAULT 'pending'
@@ -78,3 +94,5 @@ COMMENT ON COLUMN questionnaire_tasks.title IS '问卷标题，从HTML <h1 class
 COMMENT ON COLUMN questionnaire_tasks.cancel_requested IS '停止任务请求标记：置为TRUE后，后台提交循环在下一次迭代开始前检测到会优雅停止，状态置为cancelled';
 COMMENT ON COLUMN questionnaire_tasks.analyzed_schema IS '完整问卷结构（含量表识别/正反向题/positive_values/negative_values），是生成答案的唯一依据';
 COMMENT ON COLUMN questionnaire_tasks.detection_method IS '该次分析使用的检测方式：keyword(关键字) 或 ai';
+COMMENT ON COLUMN questionnaire_tasks.proxy_area IS '任务要求的代理地区；代理API凭据不进入数据库';
+COMMENT ON COLUMN questionnaire_tasks.proxy_required IS 'TRUE时代理异常禁止回退本机直连';

@@ -101,6 +101,32 @@ class SubmitConfig(BaseModel):
     )
 
 
+class ProxyConfig(BaseModel):
+    """单个提交任务使用的代理策略（不包含供应商凭据）。"""
+
+    enabled: bool = Field(False, description="是否为该任务启用动态代理")
+    provider: Literal["kuaidaili"] = Field("kuaidaili", description="代理供应商")
+    area: str = Field("", max_length=64, description="目标地区，如南京、杭州市")
+    carrier: Literal[0, 1, 2, 3] = Field(
+        0, description="运营商：0不限、1联通、2电信、3移动"
+    )
+    rotate_per_submission: bool = Field(True, description="是否每份问卷重新提取代理")
+    dedup: bool = Field(True, description="是否过滤当天已经提取过的IP")
+    verify_exit: bool = Field(True, description="是否通过浏览器验证实际出口IP和地区")
+    location_match: Literal["strict", "relaxed"] = Field(
+        "relaxed", description="地区匹配策略"
+    )
+    required: bool = Field(True, description="代理失败时是否禁止回退到直连")
+    max_acquire_attempts: int = Field(3, ge=1, le=5, description="单份最大代理获取次数")
+
+    @validator("area")
+    def validate_area(cls, value, values):
+        normalized = " ".join((value or "").strip().split())
+        if values.get("enabled") and not normalized:
+            raise ValueError("启用代理时必须指定area")
+        return normalized
+
+
 class SubmitRequest(BaseModel):
     """问卷提交请求
 
@@ -117,6 +143,10 @@ class SubmitRequest(BaseModel):
         None,
         description="模式配置（mode为high_reliability时必填）"
     )
+    proxy: Optional[ProxyConfig] = Field(
+        None,
+        description="任务代理配置；省略时使用服务端环境变量中的默认代理策略"
+    )
 
     @validator('config')
     def validate_config(cls, v, values):
@@ -132,6 +162,15 @@ class SubmitResult(BaseModel):
     index: int = Field(..., description="提交序号")
     status: Literal["success", "failed"] = Field(..., description="提交状态")
     error: Optional[str] = Field(None, description="错误信息（失败时）")
+    proxy_endpoint: Optional[str] = Field(None, description="脱敏代理地址IP:端口")
+    proxy_requested_area: Optional[str] = Field(None, description="请求的代理地区")
+    proxy_reported_location: Optional[str] = Field(None, description="验证得到的出口地区")
+    proxy_exit_ip: Optional[str] = Field(None, description="验证得到的出口IP")
+    proxy_carrier: Optional[str] = Field(None, description="代理运营商")
+    proxy_remaining_seconds: Optional[int] = Field(None, description="代理提取时剩余秒数")
+    proxy_latency_ms: Optional[int] = Field(None, description="出口验证耗时")
+    proxy_attempts: int = Field(0, description="代理获取尝试次数")
+    failure_stage: Optional[str] = Field(None, description="失败发生阶段")
 
 
 class TaskStatusResponse(BaseModel):
@@ -146,6 +185,7 @@ class TaskStatusResponse(BaseModel):
     progress: int = Field(0, ge=0, le=100, description="进度百分比")
     start_time: str = Field(..., description="开始时间")
     end_time: Optional[str] = Field(None, description="结束时间")
+    proxy: Optional[ProxyConfig] = Field(None, description="该任务持久化的代理策略")
     results: List[SubmitResult] = Field(default_factory=list, description="提交结果列表")
 
 

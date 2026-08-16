@@ -13,16 +13,18 @@ re-visited or re-analyzed at submit time.
 
 import asyncio
 import random
+from dataclasses import replace
 from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from playwright.async_api import async_playwright
+from playwright.async_api import BrowserContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import (
     AnalyzeRequest, DataResponse, AnalyzeResponse, QuestionResponse,
     SubmitRequest, TaskStatusResponse, SubmitResult,
-    DetectionRequest, DetectionResponse, DetectionResult
+    DetectionRequest, DetectionResponse, DetectionResult, ProxyConfig
 )
 from core.rule_based_analyzer import RuleBasedAnalyzer
 from core.dynamic_answer_generator import DynamicAnswerGenerator
@@ -34,9 +36,76 @@ from ai.client import AIClient
 from ai.reverse_detector import override_schema_with_ai_detection
 from db.session import get_session, session_scope
 from db.models import QuestionnaireTask, TaskSubmission
+from proxy.config import KuaidailiSettings
+from proxy.models import ProxyLease
+from proxy.service import ProxyService, browser_launch_proxy, create_submission_context
 
 
 router = APIRouter(prefix="/api/questionnaire", tags=["questionnaire"])
+
+
+def proxy_config_from_settings(settings: KuaidailiSettings) -> dict:
+    """Return the non-secret default task policy from environment settings."""
+
+    return {
+        "enabled": settings.enabled,
+        "provider": "kuaidaili",
+        "area": settings.default_area,
+        "carrier": settings.default_carrier,
+        "rotate_per_submission": settings.rotate_per_submission,
+        "dedup": settings.dedup,
+        "verify_exit": settings.verify_exit,
+        "location_match": settings.location_match,
+        "required": settings.required,
+        "max_acquire_attempts": settings.max_acquire_attempts,
+    }
+
+
+def proxy_settings_from_task(task_row, base: KuaidailiSettings) -> KuaidailiSettings:
+    """Combine persisted task policy with environment-only provider credentials."""
+
+    settings = replace(
+        base,
+        enabled=task_row.proxy_enabled,
+        default_area=task_row.proxy_area or "",
+        default_carrier=task_row.proxy_carrier,
+        rotate_per_submission=task_row.proxy_rotate_per_submission,
+        dedup=task_row.proxy_dedup,
+        verify_exit=task_row.proxy_verify_exit,
+        location_match=task_row.proxy_location_match,
+        required=task_row.proxy_required,
+        max_acquire_attempts=task_row.proxy_max_acquire_attempts,
+    )
+    settings.validate(require_credentials=settings.enabled)
+    return settings
+
+
+def apply_proxy_config(task_row, proxy_config: dict) -> None:
+    task_row.proxy_enabled = proxy_config["enabled"]
+    task_row.proxy_provider = proxy_config["provider"] if proxy_config["enabled"] else None
+    task_row.proxy_area = proxy_config["area"] or None
+    task_row.proxy_carrier = proxy_config["carrier"]
+    task_row.proxy_rotate_per_submission = proxy_config["rotate_per_submission"]
+    task_row.proxy_dedup = proxy_config["dedup"]
+    task_row.proxy_verify_exit = proxy_config["verify_exit"]
+    task_row.proxy_location_match = proxy_config["location_match"]
+    task_row.proxy_required = proxy_config["required"]
+    task_row.proxy_max_acquire_attempts = proxy_config["max_acquire_attempts"]
+
+
+def record_proxy_lease(submission, lease: ProxyLease | None) -> None:
+    if lease is None:
+        return
+    submission.proxy_host = lease.endpoint.host
+    submission.proxy_port = lease.endpoint.port
+    submission.proxy_requested_area = lease.requested_area
+    submission.proxy_reported_location = lease.verified_location
+    submission.proxy_city_code = lease.endpoint.city_code or None
+    submission.proxy_carrier = lease.endpoint.carrier or None
+    submission.proxy_exit_ip = lease.exit_ip
+    submission.proxy_remaining_seconds = lease.remaining_seconds()
+    submission.proxy_latency_ms = lease.latency_ms
+    submission.proxy_attempts = lease.acquisition_attempt
 
 
 # ========== Questionnaire Analysis API ==========
@@ -172,7 +241,13 @@ async def analyze_questionnaire(
 
 # ========== Questionnaire Submission API ==========
 
-async def submit_one_questionnaire(url: str, schema, answers: dict, headless: bool = True) -> dict:
+async def submit_one_questionnaire(
+    url: str,
+    schema,
+    answers: dict,
+    context: BrowserContext,
+    lease: ProxyLease | None = None,
+) -> dict:
     """
     Submit one questionnaire
 
@@ -180,36 +255,41 @@ async def submit_one_questionnaire(url: str, schema, answers: dict, headless: bo
         url: Questionnaire URL
         schema: Questionnaire Schema
         answers: Answer dictionary
-        headless: Whether to run the browser headless. False opens a visible
-            browser window (debug mode), driven by SubmitConfig.debug from the
-            frontend's submit form toggle.
+        context: A fresh browser context for this submission. When proxy mode
+            is enabled, the context is already bound to one proxy endpoint.
+        lease: Optional metadata for the selected proxy lease.
 
     Returns:
         Submission result: {'success': True/False, 'error': 'error message'}
     """
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=headless, slow_mo=100 if not headless else 0)
-        page = await browser.new_page()
+    page = await context.new_page()
+    try:
+        await page.goto(url, wait_until='networkidle', timeout=30000)
+        await asyncio.sleep(random.uniform(1, 2))
 
-        try:
-            await page.goto(url, wait_until='networkidle', timeout=30000)
-            await asyncio.sleep(random.uniform(1, 2))
+        submitter = DynamicSubmitter(schema)
+        success = await submitter.fill_and_submit(page, answers)
 
-            # Use DynamicSubmitter to fill and submit
-            submitter = DynamicSubmitter(schema)
-            success = await submitter.fill_and_submit(page, answers)
+        result = {'success': success}
+        if lease:
+            result['proxy'] = {
+                'endpoint': lease.endpoint.log_label,
+                'requested_area': lease.requested_area,
+                'exit_ip': lease.exit_ip,
+                'verified_location': lease.verified_location,
+                'latency_ms': lease.latency_ms,
+                'attempt': lease.acquisition_attempt,
+            }
+        return result
 
-            return {'success': success}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
 
-        except Exception as e:
-            return {'success': False, 'error': str(e)}
-
-        finally:
-            await asyncio.sleep(1)
-            await browser.close()
+    finally:
+        await page.close()
 
 
-async def submit_questionnaire_task(task_id: str, count: int, mode: str, config: dict):
+async def submit_questionnaire_task(task_id: str):
     """
     Background task: batch submit questionnaires
 
@@ -219,9 +299,7 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
 
     Args:
         task_id: questionnaire_tasks.id (as string)
-        count: Number of submissions
-        mode: Submission mode
-        config: Mode configuration
+        All execution and proxy policy fields are restored from the task row.
     """
     async with session_scope() as session:
         task_row = await session.get(QuestionnaireTask, task_id)
@@ -230,11 +308,6 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
 
         try:
             task_row.status = "processing"
-            task_row.submit_mode = mode
-            task_row.attitude = config.get("attitude", "positive")
-            task_row.add_variation = config.get("add_variation", False)
-            task_row.variation_ratio = config.get("variation_ratio", 0.05)
-            task_row.total_count = count
             task_row.started_at = datetime.now(timezone.utc)
             await session.commit()
 
@@ -244,62 +317,111 @@ async def submit_questionnaire_task(task_id: str, count: int, mode: str, config:
 
             generator = DynamicAnswerGenerator(
                 schema=schema,
-                mode=mode,
-                attitude=config.get("attitude", "positive"),
-                add_variation=config.get("add_variation", False),
-                variation_ratio=config.get("variation_ratio", 0.05)
+                mode=task_row.submit_mode,
+                attitude=task_row.attitude,
+                add_variation=task_row.add_variation,
+                variation_ratio=float(task_row.variation_ratio)
             )
 
             success_count = 0
             fail_count = 0
-            headless = not config.get("debug", False)
+            count = task_row.total_count
+            headless = not task_row.browser_debug
             cancelled = False
+            proxy_settings = proxy_settings_from_task(
+                task_row, KuaidailiSettings.from_env()
+            )
+            proxy_service = ProxyService(proxy_settings) if proxy_settings.enabled else None
 
-            for i in range(count):
+            async with async_playwright() as playwright:
+                launch_proxy = browser_launch_proxy(proxy_settings)
+                browser = await playwright.chromium.launch(
+                    headless=headless,
+                    slow_mo=100 if not headless else 0,
+                    proxy=launch_proxy,
+                )
+                try:
+                    for i in range(count):
                 # Refresh from DB to pick up a cancel_requested flag set by
                 # the /submit/{task_id}/cancel endpoint from another request —
                 # this long-lived session otherwise never sees that commit.
-                await session.refresh(task_row)
-                if task_row.cancel_requested:
-                    cancelled = True
-                    break
+                        await session.refresh(task_row)
+                        if task_row.cancel_requested:
+                            cancelled = True
+                            break
 
-                submission = TaskSubmission(
-                    task_id=task_row.id,
-                    submit_index=i + 1,
-                    status="pending",
-                    started_at=datetime.now(timezone.utc),
-                )
-                session.add(submission)
+                        submission = TaskSubmission(
+                            task_id=task_row.id,
+                            submit_index=i + 1,
+                            status="pending",
+                            started_at=datetime.now(timezone.utc),
+                        )
+                        session.add(submission)
 
-                try:
-                    answers = generator.generate_answers()
-                    result = await submit_one_questionnaire(url, schema, answers, headless=headless)
+                        context = None
+                        lease = None
+                        try:
+                            answers = generator.generate_answers()
+                            context_options = {
+                                'locale': 'zh-CN',
+                                'timezone_id': 'Asia/Shanghai',
+                                'viewport': {
+                                    'width': random.randint(1366, 1920),
+                                    'height': random.randint(768, 1080),
+                                },
+                            }
+                            lease, context = await create_submission_context(
+                                browser=browser,
+                                settings=proxy_settings,
+                                service=proxy_service,
+                                context_options=context_options,
+                            )
 
-                    if result.get('success'):
-                        success_count += 1
-                        submission.status = "success"
-                    else:
-                        fail_count += 1
-                        submission.status = "failed"
-                        submission.error_message = result.get('error', 'Unknown error')
+                            result = await submit_one_questionnaire(
+                                url, schema, answers, context=context, lease=lease
+                            )
+                            record_proxy_lease(submission, lease)
 
-                    submission.generated_answers = answers
+                            if result.get('success'):
+                                success_count += 1
+                                submission.status = "success"
+                            else:
+                                fail_count += 1
+                                submission.status = "failed"
+                                submission.error_message = result.get('error', 'Unknown error')
+                                submission.failure_stage = "business_submission"
 
-                except Exception as e:
-                    fail_count += 1
-                    submission.status = "failed"
-                    submission.error_message = str(e)
+                            submission.generated_answers = answers
 
-                submission.finished_at = datetime.now(timezone.utc)
+                        except Exception as e:
+                            record_proxy_lease(submission, lease)
+                            fail_count += 1
+                            submission.status = "failed"
+                            submission.error_message = str(e)
+                            submission.failure_stage = (
+                                "proxy_acquire_context" if lease is None and proxy_settings.enabled
+                                else "submission_execution"
+                            )
+                            if lease is None and proxy_settings.enabled:
+                                submission.proxy_requested_area = proxy_settings.default_area
+                                submission.proxy_attempts = proxy_settings.max_acquire_attempts
+                        finally:
+                            if context is not None:
+                                await context.close()
 
-                task_row.submitted_count = success_count
-                task_row.failed_count = fail_count
-                task_row.progress = int((i + 1) / count * 100)
-                await session.commit()
+                        submission.finished_at = datetime.now(timezone.utc)
 
-                if i < count - 1:
-                    await asyncio.sleep(random.uniform(3, 5))
+                        task_row.submitted_count = success_count
+                        task_row.failed_count = fail_count
+                        task_row.progress = int((i + 1) / count * 100)
+                        await session.commit()
+
+                        if i < count - 1:
+                            await asyncio.sleep(random.uniform(3, 5))
+                finally:
+                    if proxy_service:
+                        await proxy_service.aclose()
+                    await browser.close()
 
             if cancelled:
                 task_row.status = "cancelled"
@@ -344,7 +466,15 @@ async def submit_questionnaire(
                 detail=f"Task not found: {request.task_id}. Call /analyze first."
             )
 
-        config = request.config.dict() if request.config else {}
+        config = request.config.model_dump() if request.config else {}
+        environment_proxy = KuaidailiSettings.from_env()
+        proxy_config = (
+            request.proxy.model_dump()
+            if request.proxy is not None
+            else proxy_config_from_settings(environment_proxy)
+        )
+        if proxy_config["enabled"]:
+            environment_proxy.validate(require_credentials=True)
 
         task_row.status = "pending"
         task_row.submit_mode = request.mode
@@ -352,12 +482,14 @@ async def submit_questionnaire(
         task_row.attitude = config.get("attitude", "positive")
         task_row.add_variation = config.get("add_variation", False)
         task_row.variation_ratio = config.get("variation_ratio", 0.05)
+        task_row.browser_debug = config.get("debug", False)
+        apply_proxy_config(task_row, proxy_config)
         task_row.cancel_requested = False
         await session.commit()
 
         background_tasks.add_task(
             submit_questionnaire_task,
-            request.task_id, request.count, request.mode, config
+            request.task_id
         )
 
         return DataResponse(
@@ -367,7 +499,8 @@ async def submit_questionnaire(
                 "task_id": request.task_id,
                 "status": "processing",
                 "submitted": 0,
-                "total": request.count
+                "total": request.count,
+                "proxy": proxy_config,
             }
         )
 
@@ -416,11 +549,34 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
         progress=task_row.progress,
         start_time=(task_row.started_at or task_row.created_at).isoformat(),
         end_time=task_row.finished_at.isoformat() if task_row.finished_at else None,
+        proxy=ProxyConfig(
+            enabled=task_row.proxy_enabled,
+            provider=task_row.proxy_provider or "kuaidaili",
+            area=task_row.proxy_area or "",
+            carrier=task_row.proxy_carrier,
+            rotate_per_submission=task_row.proxy_rotate_per_submission,
+            dedup=task_row.proxy_dedup,
+            verify_exit=task_row.proxy_verify_exit,
+            location_match=task_row.proxy_location_match,
+            required=task_row.proxy_required,
+            max_acquire_attempts=task_row.proxy_max_acquire_attempts,
+        ),
         results=[
             SubmitResult(
                 index=s.submit_index,
                 status=s.status,
                 error=s.error_message,
+                proxy_endpoint=(
+                    f"{s.proxy_host}:{s.proxy_port}" if s.proxy_host and s.proxy_port else None
+                ),
+                proxy_requested_area=s.proxy_requested_area,
+                proxy_reported_location=s.proxy_reported_location,
+                proxy_exit_ip=s.proxy_exit_ip,
+                proxy_carrier=s.proxy_carrier,
+                proxy_remaining_seconds=s.proxy_remaining_seconds,
+                proxy_latency_ms=s.proxy_latency_ms,
+                proxy_attempts=s.proxy_attempts,
+                failure_stage=s.failure_stage,
             )
             for s in submissions
             if s.status in ("success", "failed")  # skip in-flight "pending" rows

@@ -129,6 +129,21 @@ class QuestionnaireTask(Base):
             name="ck_questionnaire_tasks_status",
         ),
         CheckConstraint("progress BETWEEN 0 AND 100", name="ck_questionnaire_tasks_progress"),
+        CheckConstraint(
+            "proxy_provider IS NULL OR proxy_provider IN ('kuaidaili')",
+            name="ck_questionnaire_tasks_proxy_provider",
+        ),
+        CheckConstraint(
+            "proxy_carrier BETWEEN 0 AND 3", name="ck_questionnaire_tasks_proxy_carrier"
+        ),
+        CheckConstraint(
+            "proxy_location_match IN ('strict', 'relaxed')",
+            name="ck_questionnaire_tasks_proxy_location_match",
+        ),
+        CheckConstraint(
+            "proxy_max_acquire_attempts BETWEEN 1 AND 5",
+            name="ck_questionnaire_tasks_proxy_attempts",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -153,6 +168,22 @@ class QuestionnaireTask(Base):
     attitude: Mapped[str] = mapped_column(String(16), nullable=False, default="positive")
     add_variation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     variation_ratio: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, default=Decimal("0.05"))
+    browser_debug: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    proxy_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    proxy_provider: Mapped[Optional[str]] = mapped_column(String(32))
+    proxy_area: Mapped[Optional[str]] = mapped_column(String(64))
+    proxy_carrier: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    proxy_rotate_per_submission: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    proxy_dedup: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    proxy_verify_exit: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    proxy_location_match: Mapped[str] = mapped_column(
+        String(16), nullable=False, default="relaxed"
+    )
+    proxy_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    proxy_max_acquire_attempts: Mapped[int] = mapped_column(
+        SmallInteger, nullable=False, default=3
+    )
 
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
@@ -204,6 +235,18 @@ class TaskSubmission(Base):
     error_message: Mapped[Optional[str]] = mapped_column(Text)
 
     generated_answers: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)
+
+    proxy_host: Mapped[Optional[str]] = mapped_column(String(255))
+    proxy_port: Mapped[Optional[int]] = mapped_column(Integer)
+    proxy_requested_area: Mapped[Optional[str]] = mapped_column(String(64))
+    proxy_reported_location: Mapped[Optional[str]] = mapped_column(String(128))
+    proxy_city_code: Mapped[Optional[str]] = mapped_column(String(32))
+    proxy_carrier: Mapped[Optional[str]] = mapped_column(String(32))
+    proxy_exit_ip: Mapped[Optional[str]] = mapped_column(String(64))
+    proxy_remaining_seconds: Mapped[Optional[int]] = mapped_column(Integer)
+    proxy_latency_ms: Mapped[Optional[int]] = mapped_column(Integer)
+    proxy_attempts: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
+    failure_stage: Mapped[Optional[str]] = mapped_column(String(32))
 
     started_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     finished_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
