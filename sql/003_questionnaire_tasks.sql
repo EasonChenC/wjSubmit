@@ -51,6 +51,18 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
     proxy_max_acquire_attempts SMALLINT NOT NULL DEFAULT 3
                         CHECK (proxy_max_acquire_attempts BETWEEN 1 AND 5),
 
+    -- AI 单行/多行文本题：浏览器启动前批量生成、持久化，再按提交序号读取
+    ai_text_enabled     BOOLEAN NOT NULL DEFAULT FALSE,
+    ai_text_batch_size  SMALLINT NOT NULL DEFAULT 20
+                        CHECK (ai_text_batch_size BETWEEN 1 AND 50),
+    ai_text_max_attempts SMALLINT NOT NULL DEFAULT 3
+                        CHECK (ai_text_max_attempts BETWEEN 1 AND 5),
+    ai_text_status      VARCHAR(16) NOT NULL DEFAULT 'disabled'
+                        CHECK (ai_text_status IN ('disabled', 'pending', 'generating', 'ready', 'failed', 'cancelled')),
+    ai_text_generated_count INTEGER NOT NULL DEFAULT 0,
+    ai_text_model       VARCHAR(128),
+    ai_text_error       TEXT,
+
     -- 执行进度（对应 TaskStatusResponse）
     status              VARCHAR(16) NOT NULL DEFAULT 'pending'
                         CHECK (status IN ('pending', 'processing', 'completed', 'failed', 'cancelled')),

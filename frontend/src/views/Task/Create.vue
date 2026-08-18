@@ -37,6 +37,19 @@
           <el-checkbox v-model="form.add_variation">加入随机答案生成</el-checkbox>
           <el-form-item v-if="form.add_variation" label="随机答案比例" class="ratio-field"><el-input-number v-model="form.variation_ratio" :min="1" :max="30"/><span class="ratio-unit">%</span></el-form-item>
         </div>
+        <el-divider content-position="left">文本题 AI 作答</el-divider>
+        <el-form-item label="AI 批量生成">
+          <el-switch v-model="form.ai_text.enabled" :disabled="!ai.available || textQuestionCount===0"/>
+          <p class="hint">
+            共 {{ textQuestionCount }} 道文本题（单行 {{ singleLineTextCount }} 道，多行 {{ multilineTextCount }} 道）；启用后将在浏览器提交前预生成并持久化
+            {{ form.count * textQuestionCount }} 条回答，再按第 N 份问卷确定性使用第 N 组回答。
+          </p>
+          <el-link v-if="!ai.available" type="primary" :underline="false" @click="router.push('/settings/ai')">设置 AI</el-link>
+        </el-form-item>
+        <template v-if="form.ai_text.enabled">
+          <el-form-item label="生成批次大小"><el-input-number v-model="form.ai_text.batch_size" :min="1" :max="50"/><p class="hint">每次模型调用生成的问卷份数，默认 20。</p></el-form-item>
+          <el-form-item label="批次最大尝试"><el-input-number v-model="form.ai_text.max_generation_attempts" :min="1" :max="5"/></el-form-item>
+        </template>
         <ProxyConfigForm v-model="form.proxy"/>
         <el-form-item label="浏览器调试"><el-switch v-model="form.debug"/><p class="hint">开启后显示浏览器窗口；关闭则无头运行。</p></el-form-item>
         <el-button @click="step=1">上一步</el-button><el-button type="primary" :loading="loading" @click="create">创建并开始任务</el-button>
@@ -46,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { useRouter } from 'vue-router'
 import { analyzeQuestionnaire } from '@/api/questionnaire'
@@ -58,13 +71,16 @@ import ProxyConfigForm from '@/components/Task/ProxyConfigForm.vue'
 
 const defaultProxy=():ProxyConfig=>({enabled:false,provider:'kuaidaili',area:'',carrier:0,rotate_per_submission:true,dedup:true,verify_exit:true,location_match:'relaxed',required:true,max_acquire_attempts:3})
 const step=ref(0); const loading=ref(false); const questionnaire=ref<Questionnaire>()
-const form=reactive({url:'',count:10,mode:'random' as 'random'|'high_reliability',attitude:'positive' as 'positive'|'negative',use_ai:localStorage.getItem('questionnaire_use_ai')==='true',add_variation:false,variation_ratio:15,debug:false,proxy:defaultProxy()})
+const form=reactive({url:'',count:10,mode:'random' as 'random'|'high_reliability',attitude:'positive' as 'positive'|'negative',use_ai:localStorage.getItem('questionnaire_use_ai')==='true',add_variation:false,variation_ratio:15,debug:false,proxy:defaultProxy(),ai_text:{enabled:false,batch_size:20,max_generation_attempts:3}})
 const store=useTaskStore(); const ai=useAiStore(); const router=useRouter()
+const singleLineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='text').length||0)
+const multilineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='textarea').length||0)
+const textQuestionCount=computed(()=>singleLineTextCount.value+multilineTextCount.value)
 watch(()=>form.use_ai,v=>localStorage.setItem('questionnaire_use_ai',String(v)))
 onMounted(()=>ai.fetchConfig())
 
 const analyze=async()=>{if(!form.url)return ElMessage.warning('请输入问卷 URL');loading.value=true;try{questionnaire.value=(await analyzeQuestionnaire(form.url,form.use_ai)).data.data;step.value=1}catch(error:any){ElMessage.error(error.response?.data?.detail||'解析失败')}finally{loading.value=false}}
-const create=async()=>{if(!questionnaire.value)return ElMessage.error('请先解析问卷');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('请输入代理目标地区');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy.enabled?form.proxy:undefined,config:form.mode==='high_reliability'?{attitude:form.attitude,add_variation:form.add_variation,variation_ratio:form.variation_ratio/100,debug:form.debug}:{attitude:'positive',add_variation:false,variation_ratio:0.05,debug:form.debug}});await router.push(`/tasks/${task.task_id}`)}catch(error:any){ElMessage.error(error.response?.data?.detail||'创建任务失败')}finally{loading.value=false}}
+const create=async()=>{if(!questionnaire.value)return ElMessage.error('请先解析问卷');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('请输入代理目标地区');if(form.ai_text.enabled&&!ai.available)return ElMessage.warning('请先配置并启用 AI');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy,ai_text:form.ai_text,config:form.mode==='high_reliability'?{attitude:form.attitude,add_variation:form.add_variation,variation_ratio:form.variation_ratio/100,debug:form.debug}:{attitude:'positive',add_variation:false,variation_ratio:0.05,debug:form.debug}});await router.push(`/tasks/${task.task_id}`)}catch(error:any){ElMessage.error(error.response?.data?.detail||'创建任务失败')}finally{loading.value=false}}
 </script>
 
 <style scoped>.form{max-width:680px;margin:40px auto}.el-steps{margin-bottom:36px}.el-button{margin:20px 8px 0 0}.hint{margin:6px 0 0;color:#8792a6;font-size:12px}.variation-option{margin-top:8px}.ratio-field{margin:14px 0 0 24px}.ratio-unit{margin-left:8px}</style>

@@ -62,7 +62,9 @@ class DynamicAnswerGenerator:
         self.add_variation = add_variation
         self.variation_ratio = variation_ratio
 
-    def generate_answers(self) -> Dict[str, Any]:
+    def generate_answers(
+        self, answer_overrides: Dict[str, Any] | None = None
+    ) -> Dict[str, Any]:
         """生成所有题目的答案
 
         Returns:
@@ -70,8 +72,14 @@ class DynamicAnswerGenerator:
         """
         answers = {}
 
+        overrides = answer_overrides or {}
         for question in self.schema.questions:
-            answer = self._generate_answer(question)
+            # 预生成答案按提交序号直接覆盖对应题目。调用方只向这里传入
+            # 当前提交的映射，不修改共享 schema，也不从文本池随机抽取。
+            if question.id in overrides:
+                answer = overrides[question.id]
+            else:
+                answer = self._generate_answer(question)
             answers[question.id] = answer
 
         # 添加时间戳数据（如果需要）
@@ -282,18 +290,8 @@ class DynamicAnswerGenerator:
             if pool:
                 return random.choice(pool)
 
-        # 默认建议池
-        default_suggestions = [
-            '总体满意，希望能提供更多优惠活动。',
-            '服务质量不错，配送速度很快。',
-            '产品质量很好，性价比高，会继续购买。',
-            '希望能改进客服响应速度，其他方面都挺好的。',
-            '界面设计简洁，操作方便，体验良好。',
-            '物流服务好，包装完整，商品质量有保障。',
-            '平台活动丰富，经常有优惠券可以使用。',
-            '售后服务到位，退换货流程简单快捷。',
-        ]
-        return random.choice(default_suggestions)
+        # 未配置自定义文本池时统一填写“无”，避免使用与题意无关的固定建议。
+        return '无'
 
     def _generate_matrix_answer(self, question: Question, strategy: AnswerStrategy) -> int:
         """生成矩阵评分题答案（单行）

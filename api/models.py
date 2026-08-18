@@ -127,6 +127,16 @@ class ProxyConfig(BaseModel):
         return normalized
 
 
+class AITextAnswerConfig(BaseModel):
+    """任务开始前预生成单行和多行文本题答案的配置。"""
+
+    enabled: bool = Field(False, description="是否使用AI批量生成单行和多行文本答案")
+    batch_size: int = Field(20, ge=1, le=50, description="单次模型调用生成的提交份数")
+    max_generation_attempts: int = Field(
+        3, ge=1, le=5, description="每个批次格式错误或调用失败时的最大尝试次数"
+    )
+
+
 class SubmitRequest(BaseModel):
     """问卷提交请求
 
@@ -145,7 +155,11 @@ class SubmitRequest(BaseModel):
     )
     proxy: Optional[ProxyConfig] = Field(
         None,
-        description="任务代理配置；省略时使用服务端环境变量中的默认代理策略"
+        description="任务代理配置；省略时禁用代理，只有enabled=true才使用服务端代理凭据"
+    )
+    ai_text: Optional[AITextAnswerConfig] = Field(
+        None,
+        description="文本题AI预生成配置；省略或disabled时继续使用原有回答策略"
     )
 
     @validator('config')
@@ -186,6 +200,10 @@ class TaskStatusResponse(BaseModel):
     start_time: str = Field(..., description="开始时间")
     end_time: Optional[str] = Field(None, description="结束时间")
     proxy: Optional[ProxyConfig] = Field(None, description="该任务持久化的代理策略")
+    ai_text_enabled: bool = Field(False, description="是否启用AI文本题回答")
+    ai_text_status: str = Field("disabled", description="答案池生成状态")
+    ai_text_generated_count: int = Field(0, description="已预生成的提交份数")
+    ai_text_error: Optional[str] = Field(None, description="答案池生成错误")
     results: List[SubmitResult] = Field(default_factory=list, description="提交结果列表")
 
 

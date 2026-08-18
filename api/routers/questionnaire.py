@@ -34,8 +34,9 @@ from core.schema import QuestionType, QuestionnaireSchema
 from ai import ai_config_manager
 from ai.client import AIClient
 from ai.reverse_detector import override_schema_with_ai_detection
+from ai.text_answer_pool import TextareaAnswerPoolGenerator, TextAnswerPoolError
 from db.session import get_session, session_scope
-from db.models import QuestionnaireTask, TaskSubmission
+from db.models import QuestionnaireTask, TaskSubmission, TaskTextAnswerPool
 from proxy.config import KuaidailiSettings
 from proxy.models import ProxyLease
 from proxy.service import ProxyService, browser_launch_proxy, create_submission_context
@@ -58,6 +59,27 @@ def proxy_config_from_settings(settings: KuaidailiSettings) -> dict:
         "location_match": settings.location_match,
         "required": settings.required,
         "max_acquire_attempts": settings.max_acquire_attempts,
+    }
+
+
+def disabled_proxy_config() -> dict:
+    """Return a complete task policy that explicitly disables proxy usage.
+
+    Questionnaire tasks are opt-in: provider credentials and KDL_ENABLED only
+    make the provider available; they must not silently enable it for a task
+    whose create request omitted/disabled the proxy option.
+    """
+    return {
+        "enabled": False,
+        "provider": "kuaidaili",
+        "area": "",
+        "carrier": 0,
+        "rotate_per_submission": True,
+        "dedup": True,
+        "verify_exit": True,
+        "location_match": "relaxed",
+        "required": True,
+        "max_acquire_attempts": 3,
     }
 
 
@@ -106,6 +128,119 @@ def record_proxy_lease(submission, lease: ProxyLease | None) -> None:
     submission.proxy_remaining_seconds = lease.remaining_seconds()
     submission.proxy_latency_ms = lease.latency_ms
     submission.proxy_attempts = lease.acquisition_attempt
+
+
+def is_ai_text_question(question) -> bool:
+    """Return whether a question participates in AI text answer generation."""
+    return question.type in {QuestionType.TEXT, QuestionType.TEXTAREA}
+
+
+async def prepare_text_answer_pools(
+    session: AsyncSession,
+    task_row: QuestionnaireTask,
+    schema: QuestionnaireSchema,
+) -> dict[str, list[str]]:
+    """Generate/resume all AI single-line and multiline text pools.
+
+    Each database row stores one question's answers in submission order. A
+    commit follows every valid batch so a restarted background task resumes at
+    the first missing index instead of regenerating completed answers.
+    """
+    if not task_row.ai_text_enabled:
+        return {}
+
+    questions = [
+        {"id": question.id, "label": question.label}
+        for question in schema.questions
+        if is_ai_text_question(question)
+    ]
+    if not questions:
+        task_row.ai_text_status = "ready"
+        task_row.ai_text_generated_count = task_row.total_count
+        task_row.ai_text_error = None
+        await session.commit()
+        return {}
+
+    if not await ai_config_manager.is_configured(session):
+        raise TextAnswerPoolError("AI configuration is disabled or incomplete")
+    ai_config = await ai_config_manager.get_config(session)
+    task_row.ai_text_status = "generating"
+    task_row.ai_text_model = ai_config.model
+    task_row.ai_text_error = None
+    await session.commit()
+
+    result = await session.execute(
+        select(TaskTextAnswerPool).where(TaskTextAnswerPool.task_id == task_row.id)
+    )
+    existing = {row.question_id: row for row in result.scalars().all()}
+    pools: dict[str, TaskTextAnswerPool] = {}
+    for question in questions:
+        row = existing.get(question["id"])
+        if row is None:
+            row = TaskTextAnswerPool(
+                task_id=task_row.id,
+                question_id=question["id"],
+                question_label=question["label"],
+                answers=[],
+            )
+            session.add(row)
+        pools[question["id"]] = row
+    await session.commit()
+
+    lengths = {len(row.answers or []) for row in pools.values()}
+    if len(lengths) != 1:
+        raise TextAnswerPoolError("Persisted text answer pools have inconsistent lengths")
+    generated_count = lengths.pop() if lengths else 0
+    if generated_count > task_row.total_count:
+        raise TextAnswerPoolError("Persisted text answer pool exceeds task submission count")
+
+    task_row.ai_text_generated_count = generated_count
+    await session.commit()
+
+    generator = TextareaAnswerPoolGenerator(
+        AIClient(ai_config.api_key, ai_config.model, ai_config.base_url),
+        max_attempts=task_row.ai_text_max_attempts,
+    )
+    while generated_count < task_row.total_count:
+        await session.refresh(task_row)
+        if task_row.cancel_requested:
+            raise asyncio.CancelledError("Task cancelled while generating text answers")
+
+        current_batch_size = min(
+            task_row.ai_text_batch_size,
+            task_row.total_count - generated_count,
+        )
+        batch = await generator.generate_batch(questions, current_batch_size)
+        for local_answers in batch:
+            for question in questions:
+                row = pools[question["id"]]
+                row.answers = [*(row.answers or []), local_answers[question["id"]]]
+
+        generated_count += current_batch_size
+        task_row.ai_text_generated_count = generated_count
+        await session.commit()
+
+    task_row.ai_text_status = "ready"
+    task_row.ai_text_error = None
+    await session.commit()
+    return {question_id: list(row.answers or []) for question_id, row in pools.items()}
+
+
+def text_overrides_for_submission(
+    pools: dict[str, list[str]], submission_index: int
+) -> dict[str, str]:
+    """Return the exact pre-generated text answers for a 1-based index."""
+    if not pools:
+        return {}
+    offset = submission_index - 1
+    overrides: dict[str, str] = {}
+    for question_id, answers in pools.items():
+        if offset < 0 or offset >= len(answers):
+            raise TextAnswerPoolError(
+                f"Missing persisted answer for {question_id} at submission {submission_index}"
+            )
+        overrides[question_id] = answers[offset]
+    return overrides
 
 
 # ========== Questionnaire Analysis API ==========
@@ -328,9 +463,20 @@ async def submit_questionnaire_task(task_id: str):
             count = task_row.total_count
             headless = not task_row.browser_debug
             cancelled = False
-            proxy_settings = proxy_settings_from_task(
-                task_row, KuaidailiSettings.from_env()
+            # AI开放题在启动浏览器之前全部生成并持久化；只有状态 ready
+            # 后才进入提交循环，避免模型延迟占用活跃 BrowserContext。
+            text_answer_pools = await prepare_text_answer_pools(
+                session, task_row, schema
             )
+            # A disabled task must not even load provider credentials/settings.
+            # This keeps the direct path completely independent from an expired
+            # Kuaidaili order or a globally enabled provider environment flag.
+            base_proxy_settings = (
+                KuaidailiSettings.from_env()
+                if task_row.proxy_enabled
+                else KuaidailiSettings(enabled=False)
+            )
+            proxy_settings = proxy_settings_from_task(task_row, base_proxy_settings)
             proxy_service = ProxyService(proxy_settings) if proxy_settings.enabled else None
 
             async with async_playwright() as playwright:
@@ -361,7 +507,10 @@ async def submit_questionnaire_task(task_id: str):
                         context = None
                         lease = None
                         try:
-                            answers = generator.generate_answers()
+                            answer_overrides = text_overrides_for_submission(
+                                text_answer_pools, i + 1
+                            )
+                            answers = generator.generate_answers(answer_overrides)
                             context_options = {
                                 'locale': 'zh-CN',
                                 'timezone_id': 'Asia/Shanghai',
@@ -430,10 +579,20 @@ async def submit_questionnaire_task(task_id: str):
             task_row.finished_at = datetime.now(timezone.utc)
             await session.commit()
 
+        except asyncio.CancelledError:
+            await session.rollback()
+            task_row.status = "cancelled"
+            task_row.ai_text_status = "cancelled"
+            task_row.ai_text_error = None
+            task_row.finished_at = datetime.now(timezone.utc)
+            await session.commit()
         except Exception as e:
             await session.rollback()
             task_row.status = "failed"
             task_row.error_message = str(e)
+            if task_row.ai_text_enabled and task_row.ai_text_status != "ready":
+                task_row.ai_text_status = "failed"
+                task_row.ai_text_error = str(e)
             task_row.finished_at = datetime.now(timezone.utc)
             await session.commit()
 
@@ -467,14 +626,25 @@ async def submit_questionnaire(
             )
 
         config = request.config.model_dump() if request.config else {}
-        environment_proxy = KuaidailiSettings.from_env()
         proxy_config = (
             request.proxy.model_dump()
             if request.proxy is not None
-            else proxy_config_from_settings(environment_proxy)
+            else disabled_proxy_config()
         )
         if proxy_config["enabled"]:
+            environment_proxy = KuaidailiSettings.from_env()
             environment_proxy.validate(require_credentials=True)
+
+        ai_text_config = request.ai_text.model_dump() if request.ai_text else {
+            "enabled": False,
+            "batch_size": 20,
+            "max_generation_attempts": 3,
+        }
+        if ai_text_config["enabled"] and not await ai_config_manager.is_configured(session):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="AI is not configured. Please configure AI settings first."
+            )
 
         task_row.status = "pending"
         task_row.submit_mode = request.mode
@@ -483,6 +653,13 @@ async def submit_questionnaire(
         task_row.add_variation = config.get("add_variation", False)
         task_row.variation_ratio = config.get("variation_ratio", 0.05)
         task_row.browser_debug = config.get("debug", False)
+        task_row.ai_text_enabled = ai_text_config["enabled"]
+        task_row.ai_text_batch_size = ai_text_config["batch_size"]
+        task_row.ai_text_max_attempts = ai_text_config["max_generation_attempts"]
+        task_row.ai_text_status = "pending" if ai_text_config["enabled"] else "disabled"
+        task_row.ai_text_generated_count = 0
+        task_row.ai_text_model = None
+        task_row.ai_text_error = None
         apply_proxy_config(task_row, proxy_config)
         task_row.cancel_requested = False
         await session.commit()
@@ -501,6 +678,7 @@ async def submit_questionnaire(
                 "submitted": 0,
                 "total": request.count,
                 "proxy": proxy_config,
+                "ai_text": ai_text_config,
             }
         )
 
@@ -561,6 +739,10 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
             required=task_row.proxy_required,
             max_acquire_attempts=task_row.proxy_max_acquire_attempts,
         ),
+        ai_text_enabled=task_row.ai_text_enabled,
+        ai_text_status=task_row.ai_text_status,
+        ai_text_generated_count=task_row.ai_text_generated_count,
+        ai_text_error=task_row.ai_text_error,
         results=[
             SubmitResult(
                 index=s.submit_index,

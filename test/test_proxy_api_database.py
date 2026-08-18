@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from api.models import ProxyConfig, SubmitRequest, SubmitResult, TaskStatusResponse
 from api.routers.questionnaire import (
     apply_proxy_config,
+    disabled_proxy_config,
     proxy_config_from_settings,
     proxy_settings_from_task,
     record_proxy_lease,
@@ -20,6 +21,17 @@ from proxy.models import ProxyEndpoint, ProxyLease
 
 
 class ProxyApiModelTests(unittest.TestCase):
+    def test_omitted_proxy_policy_is_explicitly_disabled(self):
+        request = SubmitRequest(task_id="task-id", count=1, mode="random")
+        policy = request.proxy.model_dump() if request.proxy else disabled_proxy_config()
+        self.assertFalse(policy["enabled"])
+
+    def test_explicit_disabled_proxy_policy_remains_disabled(self):
+        request = SubmitRequest(
+            task_id="task-id", count=1, mode="random", proxy={"enabled": False}
+        )
+        self.assertFalse(request.proxy.enabled)
+
     def test_enabled_proxy_requires_area(self):
         with self.assertRaises(ValidationError):
             ProxyConfig(enabled=True, area="")

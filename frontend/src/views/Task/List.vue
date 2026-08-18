@@ -8,7 +8,35 @@
       <el-steps :active="step" finish-status="success" simple><el-step title="输入 URL"/><el-step title="预览问卷"/><el-step title="配置提交"/></el-steps>
       <el-form v-if="step===0" class="wizard-form" :model="form"><el-form-item label="问卷 URL"><el-input v-model="form.url"/></el-form-item><el-checkbox v-model="form.use_ai" :disabled="!ai.available">使用 AI 识别反向题</el-checkbox><br/><el-button type="primary" :loading="loading" @click="analyze">解析问卷</el-button></el-form>
       <div v-else-if="step===1"><el-alert title="问卷解析成功" type="success" show-icon/><p>共 {{questionnaire?.total_questions}} 道题</p><QuestionPreview v-if="questionnaire" :questions="questionnaire.questions"/><el-button @click="step=0">上一步</el-button><el-button type="primary" @click="step=2">下一步</el-button></div>
-      <el-form v-else class="wizard-form" :model="form"><el-form-item label="提交数量"><el-input-number v-model="form.count" :min="1" :max="1000"/></el-form-item><el-form-item label="模式"><el-radio-group v-model="form.mode"><el-radio value="random">随机</el-radio><el-radio value="high_reliability">高可靠性</el-radio></el-radio-group></el-form-item><el-form-item v-if="form.mode==='high_reliability'" label="态度"><el-radio-group v-model="form.attitude"><el-radio value="positive">积极</el-radio><el-radio value="negative">消极</el-radio></el-radio-group></el-form-item><ProxyConfigForm v-model="form.proxy"/><el-form-item label="浏览器调试"><el-switch v-model="form.debug"/></el-form-item><el-button @click="step=1">上一步</el-button><el-button type="primary" :loading="loading" @click="create">创建并开始任务</el-button></el-form>
+      <el-form v-else class="wizard-form" :model="form">
+        <el-form-item label="提交数量"><el-input-number v-model="form.count" :min="1" :max="1000"/></el-form-item>
+        <el-form-item label="模式"><el-radio-group v-model="form.mode"><el-radio value="random">随机</el-radio><el-radio value="high_reliability">高可靠性</el-radio></el-radio-group></el-form-item>
+        <el-form-item v-if="form.mode==='high_reliability'" label="态度"><el-radio-group v-model="form.attitude"><el-radio value="positive">积极</el-radio><el-radio value="negative">消极</el-radio></el-radio-group></el-form-item>
+
+        <el-divider content-position="left">文本题 AI 作答</el-divider>
+        <el-form-item label="AI 批量生成">
+          <el-switch v-model="form.ai_text.enabled" :disabled="!ai.available || textQuestionCount===0"/>
+          <div class="field-hint">
+            检测到 {{ textQuestionCount }} 道文本题（单行 {{ singleLineTextCount }} 道，多行 {{ multilineTextCount }} 道）；启用后将预生成
+            {{ form.count * textQuestionCount }} 条回答并按提交序号分配。
+          </div>
+          <el-link v-if="!ai.available" type="primary" :underline="false" @click="router.push('/settings/ai')">请先配置并启用 AI</el-link>
+          <div v-else-if="textQuestionCount===0" class="field-hint">当前问卷没有单行或多行文本题，此配置无需启用。</div>
+        </el-form-item>
+        <template v-if="form.ai_text.enabled">
+          <el-form-item label="每批生成份数">
+            <el-input-number v-model="form.ai_text.batch_size" :min="1" :max="50"/>
+            <span class="inline-hint">例如100份、每批20份，会调用5批。</span>
+          </el-form-item>
+          <el-form-item label="失败最大尝试">
+            <el-input-number v-model="form.ai_text.max_generation_attempts" :min="1" :max="5"/>
+          </el-form-item>
+        </template>
+
+        <ProxyConfigForm v-model="form.proxy"/>
+        <el-form-item label="浏览器调试"><el-switch v-model="form.debug"/></el-form-item>
+        <el-button @click="step=1">上一步</el-button><el-button type="primary" :loading="loading" @click="create">创建并开始任务</el-button>
+      </el-form>
     </el-dialog>
   </div>
 </template>
@@ -22,11 +50,14 @@ import type {ProxyConfig,Questionnaire} from '@/types'
 import QuestionPreview from '@/components/Questionnaire/QuestionPreview.vue'; import ProxyConfigForm from '@/components/Task/ProxyConfigForm.vue'
 const defaultProxy=():ProxyConfig=>({enabled:false,provider:'kuaidaili',area:'',carrier:0,rotate_per_submission:true,dedup:true,verify_exit:true,location_match:'relaxed',required:true,max_acquire_attempts:3})
 const store=useTaskStore(),ai=useAiStore(),router=useRouter();const dialog=ref(false),step=ref(0),loading=ref(false),questionnaire=ref<Questionnaire>()
-const form=reactive({url:'',count:10,mode:'random' as 'random'|'high_reliability',attitude:'positive' as 'positive'|'negative',use_ai:localStorage.getItem('questionnaire_use_ai')==='true',add_variation:false,variation_ratio:15,debug:false,proxy:defaultProxy()})
+const form=reactive({url:'',count:10,mode:'random' as 'random'|'high_reliability',attitude:'positive' as 'positive'|'negative',use_ai:localStorage.getItem('questionnaire_use_ai')==='true',add_variation:false,variation_ratio:15,debug:false,proxy:defaultProxy(),ai_text:{enabled:false,batch_size:20,max_generation_attempts:3}})
 watch(()=>form.use_ai,v=>localStorage.setItem('questionnaire_use_ai',String(v)));onMounted(()=>{store.fetchList();ai.fetchConfig()})
 const activeCount=computed(()=>store.tasks.filter(t=>t.status==='processing'||t.status==='pending').length),doneCount=computed(()=>store.tasks.filter(t=>t.status==='completed').length),successCount=computed(()=>store.tasks.reduce((n,t)=>n+t.submitted,0));const statusText=(s:string)=>({pending:'等待中',processing:'进行中',completed:'已完成',failed:'失败',cancelled:'已停止'}[s]||s)
+const singleLineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='text').length||0)
+const multilineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='textarea').length||0)
+const textQuestionCount=computed(()=>singleLineTextCount.value+multilineTextCount.value)
 const remove=async(id:string)=>{try{await ElMessageBox.confirm('确定删除该任务吗？','确认');await store.remove(id);ElMessage.success('已删除')}catch{}}
 const analyze=async()=>{if(!form.url)return ElMessage.warning('请输入问卷 URL');loading.value=true;try{questionnaire.value=(await analyzeQuestionnaire(form.url,form.use_ai)).data.data;step.value=1}catch(error:any){ElMessage.error(error.response?.data?.detail||'解析失败')}finally{loading.value=false}}
-const create=async()=>{if(!questionnaire.value)return ElMessage.error('请先解析问卷');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('请输入代理目标地区');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy.enabled?form.proxy:undefined,config:form.mode==='high_reliability'?{attitude:form.attitude,add_variation:form.add_variation,variation_ratio:form.variation_ratio/100,debug:form.debug}:{attitude:'positive',add_variation:false,variation_ratio:0.05,debug:form.debug}});dialog.value=false;step.value=0;await router.push('/tasks/'+task.task_id)}catch(error:any){ElMessage.error(error.response?.data?.detail||'创建任务失败')}finally{loading.value=false}}
+const create=async()=>{if(!questionnaire.value)return ElMessage.error('请先解析问卷');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('请输入代理目标地区');if(form.ai_text.enabled&&!ai.available)return ElMessage.warning('请先配置并启用 AI');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy,ai_text:form.ai_text,config:form.mode==='high_reliability'?{attitude:form.attitude,add_variation:form.add_variation,variation_ratio:form.variation_ratio/100,debug:form.debug}:{attitude:'positive',add_variation:false,variation_ratio:0.05,debug:form.debug}});dialog.value=false;step.value=0;await router.push('/tasks/'+task.task_id)}catch(error:any){ElMessage.error(error.response?.data?.detail||'创建任务失败')}finally{loading.value=false}}
 </script>
-<style scoped>.hero{display:flex;justify-content:space-between;align-items:center;padding:28px 30px;border-radius:16px;background:linear-gradient(110deg,#1d3263,#4263b8);color:#fff}.eyebrow{font-size:11px;letter-spacing:2px;opacity:.65}.hero h2{margin:7px 0}.hero p{margin:0}.create-btn{background:#fff;color:#3454bd}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{padding:18px 20px;border-radius:12px;background:#fff;border-left:4px solid #7c8ca8}.stat span{display:block;color:#8b98aa}.stat strong{display:block;font-size:25px;margin-top:8px}.blue{border-color:#5d7df2}.green{border-color:#35b98a}.orange{border-color:#f3a43b}.table-card{padding:10px 18px}.wizard-form{padding:28px 20px}.el-steps{margin:15px 0 25px}</style>
+<style scoped>.hero{display:flex;justify-content:space-between;align-items:center;padding:28px 30px;border-radius:16px;background:linear-gradient(110deg,#1d3263,#4263b8);color:#fff}.eyebrow{font-size:11px;letter-spacing:2px;opacity:.65}.hero h2{margin:7px 0}.hero p{margin:0}.create-btn{background:#fff;color:#3454bd}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{padding:18px 20px;border-radius:12px;background:#fff;border-left:4px solid #7c8ca8}.stat span{display:block;color:#8b98aa}.stat strong{display:block;font-size:25px;margin-top:8px}.blue{border-color:#5d7df2}.green{border-color:#35b98a}.orange{border-color:#f3a43b}.table-card{padding:10px 18px}.wizard-form{padding:28px 20px}.el-steps{margin:15px 0 25px}.field-hint{width:100%;margin-top:5px;color:#8792a6;font-size:12px;line-height:1.5}.inline-hint{margin-left:12px;color:#8792a6;font-size:12px}</style>

@@ -144,6 +144,18 @@ class QuestionnaireTask(Base):
             "proxy_max_acquire_attempts BETWEEN 1 AND 5",
             name="ck_questionnaire_tasks_proxy_attempts",
         ),
+        CheckConstraint(
+            "ai_text_batch_size BETWEEN 1 AND 50",
+            name="ck_questionnaire_tasks_ai_text_batch_size",
+        ),
+        CheckConstraint(
+            "ai_text_max_attempts BETWEEN 1 AND 5",
+            name="ck_questionnaire_tasks_ai_text_attempts",
+        ),
+        CheckConstraint(
+            "ai_text_status IN ('disabled', 'pending', 'generating', 'ready', 'failed', 'cancelled')",
+            name="ck_questionnaire_tasks_ai_text_status",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -185,6 +197,15 @@ class QuestionnaireTask(Base):
         SmallInteger, nullable=False, default=3
     )
 
+    # AI 单行/多行文本答案池配置与预生成状态。模型凭据仍只保存在 ai_configs。
+    ai_text_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    ai_text_batch_size: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=20)
+    ai_text_max_attempts: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=3)
+    ai_text_status: Mapped[str] = mapped_column(String(16), nullable=False, default="disabled")
+    ai_text_generated_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    ai_text_model: Mapped[Optional[str]] = mapped_column(String(128))
+    ai_text_error: Mapped[Optional[str]] = mapped_column(Text)
+
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     submitted_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -202,6 +223,9 @@ class QuestionnaireTask(Base):
 
     user: Mapped[Optional["User"]] = relationship(back_populates="questionnaire_tasks")
     submissions: Mapped[list["TaskSubmission"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
+    text_answer_pools: Mapped[list["TaskTextAnswerPool"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
 
@@ -256,3 +280,29 @@ class TaskSubmission(Base):
 
     def __repr__(self) -> str:
         return f"TaskSubmission(id={self.id}, task_id={self.task_id}, index={self.submit_index})"
+
+
+class TaskTextAnswerPool(Base):
+    """一个任务中某道单行或多行文本题按提交序号排列的持久化答案池。"""
+
+    __tablename__ = "task_text_answer_pools"
+    __table_args__ = (
+        UniqueConstraint("task_id", "question_id", name="uq_task_text_pool_question"),
+        CheckConstraint(
+            "jsonb_typeof(answers) = 'array'", name="ck_task_text_pool_answers_array"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questionnaire_tasks.id", ondelete="CASCADE"), nullable=False
+    )
+    question_id: Mapped[str] = mapped_column(String(128), nullable=False)
+    question_label: Mapped[str] = mapped_column(Text, nullable=False)
+    answers: Mapped[list[Any]] = mapped_column(JSONB, nullable=False, default=list)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    task: Mapped["QuestionnaireTask"] = relationship(back_populates="text_answer_pools")
