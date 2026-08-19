@@ -31,12 +31,22 @@ from core.dynamic_answer_generator import DynamicAnswerGenerator
 from core.dynamic_submitter import DynamicSubmitter
 from core.reverse_item_detector import ReverseItemDetector
 from core.schema import QuestionType, QuestionnaireSchema
+from core.proportion_planner import (
+    ELIGIBLE_TYPES,
+    ProportionConfigError,
+    build_proportion_plan,
+)
 from ai import ai_config_manager
 from ai.client import AIClient
 from ai.reverse_detector import override_schema_with_ai_detection
 from ai.text_answer_pool import TextareaAnswerPoolGenerator, TextAnswerPoolError
 from db.session import get_session, session_scope
-from db.models import QuestionnaireTask, TaskSubmission, TaskTextAnswerPool
+from db.models import (
+    QuestionnaireTask,
+    TaskSubmission,
+    TaskTextAnswerPool,
+    TaskProportionAnswerPlan,
+)
 from proxy.config import KuaidailiSettings
 from proxy.models import ProxyLease
 from proxy.service import ProxyService, browser_launch_proxy, create_submission_context
@@ -243,6 +253,97 @@ def text_overrides_for_submission(
     return overrides
 
 
+def _ratio_metadata(question) -> dict:
+    eligible = question.type in ELIGIBLE_TYPES and bool(question.options)
+    minimum = maximum = None
+    if question.type == QuestionType.CHECKBOX:
+        minimum = int((question.strategy.params or {}).get("min", 1 if question.required else 0))
+        maximum = int((question.strategy.params or {}).get("max", len(question.options)))
+    return {
+        "ratio_eligible": eligible,
+        "ratio_kind": (
+            "multiple" if question.type == QuestionType.CHECKBOX else "single"
+        ) if eligible else None,
+        "selection_min": minimum,
+        "selection_max": maximum,
+        "parent_question_id": question.metadata.get("base_id") if question.type == QuestionType.MATRIX else None,
+        "ratio_zero_values": (
+            [question.metadata["other_option_value"]]
+            if question.metadata.get("other_option_value") is not None else []
+        ),
+    }
+
+
+def _question_display_metadata(questions: list) -> dict[str, dict]:
+    """Assign actual top-to-bottom display order, grouping matrix/text subitems."""
+    result: dict[str, dict] = {}
+    group_positions: dict[str, int] = {}
+    matrix_rows: dict[str, int] = {}
+    next_position = 0
+    for question in questions:
+        group_id = (
+            question.metadata.get("parent_question")
+            or question.metadata.get("base_id")
+            or question.id
+        )
+        if group_id not in group_positions:
+            next_position += 1
+            group_positions[group_id] = next_position
+        position = group_positions[group_id]
+        display_key = str(position)
+        if question.type == QuestionType.MATRIX:
+            matrix_rows[group_id] = matrix_rows.get(group_id, 0) + 1
+            display_key = f"{position}.{matrix_rows[group_id]}"
+        result[question.id] = {
+            "display_order": position,
+            "ratio_display_key": display_key if question.type in ELIGIBLE_TYPES else None,
+        }
+    return result
+
+
+async def prepare_proportion_answer_plans(
+    session: AsyncSession,
+    task_row: QuestionnaireTask,
+    schema: QuestionnaireSchema,
+) -> dict[int, dict]:
+    """Create/reopen the complete deterministic proportional answer plan."""
+    if task_row.submit_mode != "proportional":
+        return {}
+
+    result = await session.execute(
+        select(TaskProportionAnswerPlan)
+        .where(TaskProportionAnswerPlan.task_id == task_row.id)
+        .order_by(TaskProportionAnswerPlan.submit_index)
+    )
+    existing = result.scalars().all()
+    if existing:
+        if len(existing) != task_row.total_count or [row.submit_index for row in existing] != list(range(1, task_row.total_count + 1)):
+            raise ProportionConfigError("Persisted proportional answer plan is incomplete")
+        task_row.proportion_plan_status = "ready"
+        task_row.proportion_plan_count = len(existing)
+        await session.commit()
+        return {row.submit_index: dict(row.answers) for row in existing}
+
+    task_row.proportion_plan_status = "pending"
+    await session.commit()
+    plans = build_proportion_plan(
+        schema,
+        task_row.proportion_config or {},
+        task_row.total_count,
+        seed=task_row.proportion_plan_seed,
+    )
+    for index, answers in enumerate(plans, 1):
+        session.add(TaskProportionAnswerPlan(
+            task_id=task_row.id,
+            submit_index=index,
+            answers=answers,
+        ))
+    task_row.proportion_plan_status = "ready"
+    task_row.proportion_plan_count = len(plans)
+    await session.commit()
+    return {index: answers for index, answers in enumerate(plans, 1)}
+
+
 # ========== Questionnaire Analysis API ==========
 
 @router.post("/analyze", response_model=DataResponse)
@@ -280,8 +381,12 @@ async def analyze_questionnaire(
         schema = analyzer.analyze(html, str(request.url))
 
         # 3. Reverse item + scale detection
-        detection_method = "keyword"
-        if request.use_ai:
+        detection_method = "structure" if request.analysis_mode == "proportional" else "keyword"
+        if request.analysis_mode == "proportional":
+            # Proportional mode needs only stable structure/options. It does not
+            # call AI or infer positive/negative/reverse semantics.
+            schema.metadata['reverse_items'] = []
+        elif request.use_ai:
             if not await ai_config_manager.is_configured(session):
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
@@ -304,6 +409,7 @@ async def analyze_questionnaire(
         scale_types = [QuestionType.RATING, QuestionType.NPS, QuestionType.MATRIX]
 
         questions_data = []
+        display_metadata = _question_display_metadata(schema.questions)
         for question in schema.questions:
             # Check if it's a scale question (hardcoded types OR AI identified)
             is_scale = question.type in scale_types or question.metadata.get('is_scale', False)
@@ -319,7 +425,9 @@ async def analyze_questionnaire(
                 reverse_confidence=question.metadata.get('reverse_confidence'),
                 detection_method=question.metadata.get('detection_method') if is_scale else None,
                 positive_values=question.metadata.get('positive_values') if is_scale else None,
-                negative_values=question.metadata.get('negative_values') if is_scale else None
+                negative_values=question.metadata.get('negative_values') if is_scale else None,
+                **_ratio_metadata(question),
+                **display_metadata[question.id],
             ))
 
         # Count scale questions (both hardcoded types and AI-identified)
@@ -468,6 +576,9 @@ async def submit_questionnaire_task(task_id: str):
             text_answer_pools = await prepare_text_answer_pools(
                 session, task_row, schema
             )
+            proportion_plans = await prepare_proportion_answer_plans(
+                session, task_row, schema
+            )
             # A disabled task must not even load provider credentials/settings.
             # This keeps the direct path completely independent from an expired
             # Kuaidaili order or a globally enabled provider environment flag.
@@ -507,37 +618,61 @@ async def submit_questionnaire_task(task_id: str):
                         context = None
                         lease = None
                         try:
-                            answer_overrides = text_overrides_for_submission(
-                                text_answer_pools, i + 1
-                            )
+                            answer_overrides = dict(proportion_plans.get(i + 1, {}))
+                            text_overrides = text_overrides_for_submission(text_answer_pools, i + 1)
+                            overlap = set(answer_overrides) & set(text_overrides)
+                            if overlap:
+                                raise ValueError(f"Conflicting answer overrides: {sorted(overlap)}")
+                            answer_overrides.update(text_overrides)
                             answers = generator.generate_answers(answer_overrides)
-                            context_options = {
-                                'locale': 'zh-CN',
-                                'timezone_id': 'Asia/Shanghai',
-                                'viewport': {
-                                    'width': random.randint(1366, 1920),
-                                    'height': random.randint(768, 1080),
-                                },
-                            }
-                            lease, context = await create_submission_context(
-                                browser=browser,
-                                settings=proxy_settings,
-                                service=proxy_service,
-                                context_options=context_options,
+                            max_submit_attempts = (
+                                min(task_row.submit_max_attempts, task_row.proportion_max_submit_attempts)
+                                if task_row.submit_mode == "proportional"
+                                else task_row.submit_max_attempts
                             )
+                            last_error = "Unknown error"
+                            succeeded = False
+                            for submit_attempt in range(1, max_submit_attempts + 1):
+                                context_options = {
+                                    'locale': 'zh-CN',
+                                    'timezone_id': 'Asia/Shanghai',
+                                    'viewport': {
+                                        'width': random.randint(1366, 1920),
+                                        'height': random.randint(768, 1080),
+                                    },
+                                }
+                                try:
+                                    lease, context = await create_submission_context(
+                                        browser=browser,
+                                        settings=proxy_settings,
+                                        service=proxy_service,
+                                        context_options=context_options,
+                                    )
+                                    result = await submit_one_questionnaire(
+                                        url, schema, answers, context=context, lease=lease
+                                    )
+                                    record_proxy_lease(submission, lease)
+                                    if result.get('success'):
+                                        succeeded = True
+                                        break
+                                    last_error = result.get('error', 'Unknown error')
+                                except Exception as attempt_error:
+                                    last_error = str(attempt_error)
+                                    record_proxy_lease(submission, lease)
+                                finally:
+                                    if context is not None:
+                                        await context.close()
+                                        context = None
+                                if submit_attempt < max_submit_attempts:
+                                    await asyncio.sleep(min(submit_attempt, 2))
 
-                            result = await submit_one_questionnaire(
-                                url, schema, answers, context=context, lease=lease
-                            )
-                            record_proxy_lease(submission, lease)
-
-                            if result.get('success'):
+                            if succeeded:
                                 success_count += 1
                                 submission.status = "success"
                             else:
                                 fail_count += 1
                                 submission.status = "failed"
-                                submission.error_message = result.get('error', 'Unknown error')
+                                submission.error_message = last_error
                                 submission.failure_stage = "business_submission"
 
                             submission.generated_answers = answers
@@ -564,6 +699,12 @@ async def submit_questionnaire_task(task_id: str):
                         task_row.failed_count = fail_count
                         task_row.progress = int((i + 1) / count * 100)
                         await session.commit()
+
+                        if submission.status == "failed":
+                            raise RuntimeError(
+                                f"Submission {i + 1} failed after {max_submit_attempts} attempts; "
+                                "later submission indexes were not consumed"
+                            )
 
                         if i < count - 1:
                             await asyncio.sleep(random.uniform(3, 5))
@@ -593,6 +734,8 @@ async def submit_questionnaire_task(task_id: str):
             if task_row.ai_text_enabled and task_row.ai_text_status != "ready":
                 task_row.ai_text_status = "failed"
                 task_row.ai_text_error = str(e)
+            if task_row.submit_mode == "proportional" and task_row.proportion_plan_status != "ready":
+                task_row.proportion_plan_status = "failed"
             task_row.finished_at = datetime.now(timezone.utc)
             await session.commit()
 
@@ -646,6 +789,28 @@ async def submit_questionnaire(
                 detail="AI is not configured. Please configure AI settings first."
             )
 
+        proportion_config = (
+            request.proportion_config.model_dump()
+            if request.proportion_config is not None else None
+        )
+        if request.mode == "proportional":
+            if task_row.detection_method != "structure":
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Proportional mode requires a task analyzed with analysis_mode=proportional",
+                )
+            try:
+                # Validate feasibility before the background task starts. The
+                # exact same deterministic plan is persisted by the worker.
+                build_proportion_plan(
+                    QuestionnaireSchema.from_dict(task_row.analyzed_schema),
+                    proportion_config or {},
+                    request.count,
+                    seed=(proportion_config or {}).get("seed", 0),
+                )
+            except ProportionConfigError as exc:
+                raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+
         task_row.status = "pending"
         task_row.submit_mode = request.mode
         task_row.total_count = request.count
@@ -653,6 +818,7 @@ async def submit_questionnaire(
         task_row.add_variation = config.get("add_variation", False)
         task_row.variation_ratio = config.get("variation_ratio", 0.05)
         task_row.browser_debug = config.get("debug", False)
+        task_row.submit_max_attempts = config.get("max_submit_attempts", 10)
         task_row.ai_text_enabled = ai_text_config["enabled"]
         task_row.ai_text_batch_size = ai_text_config["batch_size"]
         task_row.ai_text_max_attempts = ai_text_config["max_generation_attempts"]
@@ -660,6 +826,11 @@ async def submit_questionnaire(
         task_row.ai_text_generated_count = 0
         task_row.ai_text_model = None
         task_row.ai_text_error = None
+        task_row.proportion_config = proportion_config
+        task_row.proportion_plan_status = "pending" if request.mode == "proportional" else "disabled"
+        task_row.proportion_plan_count = 0
+        task_row.proportion_plan_seed = (proportion_config or {}).get("seed", 0)
+        task_row.proportion_max_submit_attempts = (proportion_config or {}).get("max_submit_attempts", 10)
         apply_proxy_config(task_row, proxy_config)
         task_row.cancel_requested = False
         await session.commit()
@@ -679,6 +850,7 @@ async def submit_questionnaire(
                 "total": request.count,
                 "proxy": proxy_config,
                 "ai_text": ai_text_config,
+                "proportion_plan_status": task_row.proportion_plan_status,
             }
         )
 
@@ -743,6 +915,8 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
         ai_text_status=task_row.ai_text_status,
         ai_text_generated_count=task_row.ai_text_generated_count,
         ai_text_error=task_row.ai_text_error,
+        proportion_plan_status=task_row.proportion_plan_status,
+        proportion_plan_count=task_row.proportion_plan_count,
         results=[
             SubmitResult(
                 index=s.submit_index,

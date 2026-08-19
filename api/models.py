@@ -46,6 +46,10 @@ class AnalyzeRequest(BaseModel):
     """问卷分析请求"""
     url: HttpUrl = Field(..., description="问卷URL", example="https://v.wjx.cn/vm/eLeS3jD.aspx")
     use_ai: bool = Field(False, description="是否使用AI进行反向题识别")
+    analysis_mode: Literal["standard", "proportional"] = Field(
+        "standard",
+        description="解析模式；proportional仅解析页面结构，不执行正反向题识别",
+    )
 
 
 class QuestionResponse(BaseModel):
@@ -61,6 +65,14 @@ class QuestionResponse(BaseModel):
     detection_method: Optional[str] = Field(None, description="检测方法（ai 或 keyword）")
     positive_values: Optional[List[Any]] = Field(None, description="积极态度对应的选项值列表")
     negative_values: Optional[List[Any]] = Field(None, description="消极态度对应的选项值列表")
+    ratio_eligible: bool = Field(False, description="是否支持按选项比例配置")
+    ratio_kind: Optional[Literal["single", "multiple"]] = Field(None, description="比例规则类型")
+    selection_min: Optional[int] = Field(None, description="多选题每份最少选择数量")
+    selection_max: Optional[int] = Field(None, description="多选题每份最多选择数量")
+    parent_question_id: Optional[str] = Field(None, description="矩阵小题所属父题ID")
+    ratio_display_key: Optional[str] = Field(None, description="按问卷实际顺序生成的比例配置显示题号")
+    display_order: int = Field(0, description="问卷页面从上到下的实际题序")
+    ratio_zero_values: List[Any] = Field(default_factory=list, description="必须固定为0%的填空选项值")
 
 
 class AnalyzeResponse(BaseModel):
@@ -75,7 +87,7 @@ class AnalyzeResponse(BaseModel):
     questions: List[QuestionResponse] = Field(default_factory=list, description="题目列表")
     scale_questions: int = Field(0, description="量表题数量")
     reverse_items: List[str] = Field(default_factory=list, description="反向题ID列表")
-    detection_method: str = Field("keyword", description="使用的检测方法（keyword 或 ai）")
+    detection_method: str = Field("keyword", description="使用的检测方法（keyword、ai 或 structure）")
 
 
 # ============================================================================
@@ -99,6 +111,9 @@ class SubmitConfig(BaseModel):
         False,
         description="是否开启浏览器调试模式（显示浏览器窗口，便于观察填写过程）；关闭则以无头模式后台提交"
     )
+    max_submit_attempts: int = Field(
+        10, ge=1, le=10, description="每个提交序号的最大尝试次数；失败不会消费下一份"
+    )
 
 
 class ProxyConfig(BaseModel):
@@ -117,7 +132,7 @@ class ProxyConfig(BaseModel):
         "relaxed", description="地区匹配策略"
     )
     required: bool = Field(True, description="代理失败时是否禁止回退到直连")
-    max_acquire_attempts: int = Field(3, ge=1, le=5, description="单份最大代理获取次数")
+    max_acquire_attempts: int = Field(10, ge=1, le=10, description="单份最大代理获取次数")
 
     @validator("area")
     def validate_area(cls, value, values):
@@ -135,6 +150,26 @@ class AITextAnswerConfig(BaseModel):
     max_generation_attempts: int = Field(
         3, ge=1, le=5, description="每个批次格式错误或调用失败时的最大尝试次数"
     )
+    max_submit_attempts: int = Field(
+        10, ge=1, le=10, description="每个成功提交序号的最大尝试次数；失败不会消费下一份"
+    )
+
+
+class ProportionOptionConfig(BaseModel):
+    value: Any = Field(..., description="分析结果中的真实选项值")
+    percentage: float = Field(..., ge=0, le=100, description="该选项目标百分比")
+
+
+class ProportionQuestionConfig(BaseModel):
+    question_id: str
+    enabled: bool = True
+    options: List[ProportionOptionConfig]
+
+
+class ProportionConfig(BaseModel):
+    questions: List[ProportionQuestionConfig] = Field(..., min_items=1)
+    seed: int = Field(0, ge=0, le=2147483647, description="答案计划打乱种子")
+    max_submit_attempts: int = Field(10, ge=1, le=10, description="比例计划单份最大提交次数")
 
 
 class SubmitRequest(BaseModel):
@@ -145,9 +180,9 @@ class SubmitRequest(BaseModel):
     """
     task_id: str = Field(..., description="任务ID（由 /analyze 接口返回）")
     count: int = Field(..., ge=1, le=1000, description="提交份数（1-1000）")
-    mode: Literal["random", "high_reliability"] = Field(
+    mode: Literal["random", "high_reliability", "proportional"] = Field(
         ...,
-        description="提交模式：random(随机) 或 high_reliability(高信度)"
+        description="提交模式：random、high_reliability 或 proportional"
     )
     config: Optional[SubmitConfig] = Field(
         None,
@@ -161,6 +196,9 @@ class SubmitRequest(BaseModel):
         None,
         description="文本题AI预生成配置；省略或disabled时继续使用原有回答策略"
     )
+    proportion_config: Optional[ProportionConfig] = Field(
+        None, description="proportional模式的题目选项比例配置"
+    )
 
     @validator('config')
     def validate_config(cls, v, values):
@@ -168,6 +206,12 @@ class SubmitRequest(BaseModel):
         mode = values.get('mode')
         if mode == 'high_reliability' and v is None:
             raise ValueError('high_reliability模式必须提供config配置')
+        return v
+
+    @validator('proportion_config', always=True)
+    def validate_proportion_config(cls, v, values):
+        if values.get('mode') == 'proportional' and v is None:
+            raise ValueError('proportional模式必须提供proportion_config')
         return v
 
 
@@ -204,6 +248,8 @@ class TaskStatusResponse(BaseModel):
     ai_text_status: str = Field("disabled", description="答案池生成状态")
     ai_text_generated_count: int = Field(0, description="已预生成的提交份数")
     ai_text_error: Optional[str] = Field(None, description="答案池生成错误")
+    proportion_plan_status: str = Field("disabled", description="比例答案计划状态")
+    proportion_plan_count: int = Field(0, description="已持久化的比例答案计划数")
     results: List[SubmitResult] = Field(default_factory=list, description="提交结果列表")
 
 

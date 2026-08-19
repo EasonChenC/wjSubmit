@@ -80,6 +80,7 @@ class ProxyDatabaseMappingTests(unittest.TestCase):
         submission_columns = TaskSubmission.__table__.columns
         for name in (
             "browser_debug",
+            "submit_max_attempts",
             "proxy_enabled",
             "proxy_provider",
             "proxy_area",

@@ -632,9 +632,10 @@ class DynamicSubmitter:
                 print(f"[WARN] 验证框仍然存在，提交未完成")
                 return False
 
-            # 未明确确认成功，返回True（假定成功）
-            print(f"[OK] 提交成功（假定）")
-            return True
+            # 未发现明确成功标志时不能计入成功数。调用方会在同一提交
+            # 序号上重试，避免验证码/网络异常被误记为成功。
+            print(f"[WARN] 未发现明确提交成功标志，判定本次提交失败")
+            return False
 
         except PlaywrightTimeoutError:
             print(f"[WARN] 提交超时")

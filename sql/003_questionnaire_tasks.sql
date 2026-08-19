@@ -22,19 +22,21 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
     -- negative_values/detection_method 等，是 submit 阶段生成答案的唯一依据
     analyzed_schema     JSONB NOT NULL,
     detection_method    VARCHAR(16) NOT NULL DEFAULT 'keyword'
-                        CHECK (detection_method IN ('keyword', 'ai')),
+                        CHECK (detection_method IN ('keyword', 'ai', 'structure')),
     total_questions     INTEGER NOT NULL DEFAULT 0,
     scale_questions     INTEGER NOT NULL DEFAULT 0,
     reverse_items       JSONB NOT NULL DEFAULT '[]'::jsonb,  -- 反向题ID列表
 
     -- 提交阶段配置（对应 SubmitRequest / SubmitConfig）
     submit_mode         VARCHAR(32) NOT NULL DEFAULT 'random'
-                        CHECK (submit_mode IN ('random', 'high_reliability')),
+                        CHECK (submit_mode IN ('random', 'high_reliability', 'proportional')),
     attitude            VARCHAR(16) NOT NULL DEFAULT 'positive'
                         CHECK (attitude IN ('positive', 'negative')),
     add_variation       BOOLEAN NOT NULL DEFAULT FALSE,
     variation_ratio     NUMERIC(4, 3) NOT NULL DEFAULT 0.05,  -- 0.01 ~ 0.30
     browser_debug       BOOLEAN NOT NULL DEFAULT FALSE,
+    submit_max_attempts SMALLINT NOT NULL DEFAULT 10
+                        CHECK (submit_max_attempts BETWEEN 1 AND 10),
 
     -- 任务级代理策略。供应商凭据仍只从环境变量读取，不写数据库。
     proxy_enabled       BOOLEAN NOT NULL DEFAULT FALSE,
@@ -62,6 +64,15 @@ CREATE TABLE IF NOT EXISTS questionnaire_tasks (
     ai_text_generated_count INTEGER NOT NULL DEFAULT 0,
     ai_text_model       VARCHAR(128),
     ai_text_error       TEXT,
+
+    -- 比例模式配置及整批答案计划状态
+    proportion_config   JSONB,
+    proportion_plan_status VARCHAR(16) NOT NULL DEFAULT 'disabled'
+                        CHECK (proportion_plan_status IN ('disabled', 'pending', 'ready', 'failed')),
+    proportion_plan_count INTEGER NOT NULL DEFAULT 0,
+    proportion_plan_seed INTEGER NOT NULL DEFAULT 0,
+    proportion_max_submit_attempts SMALLINT NOT NULL DEFAULT 10
+                        CHECK (proportion_max_submit_attempts BETWEEN 1 AND 10),
 
     -- 执行进度（对应 TaskStatusResponse）
     status              VARCHAR(16) NOT NULL DEFAULT 'pending'
@@ -105,6 +116,6 @@ COMMENT ON TABLE questionnaire_tasks IS '问卷任务表：analyze阶段的完�
 COMMENT ON COLUMN questionnaire_tasks.title IS '问卷标题，从HTML <h1 class="htitle"> 提取';
 COMMENT ON COLUMN questionnaire_tasks.cancel_requested IS '停止任务请求标记：置为TRUE后，后台提交循环在下一次迭代开始前检测到会优雅停止，状态置为cancelled';
 COMMENT ON COLUMN questionnaire_tasks.analyzed_schema IS '完整问卷结构（含量表识别/正反向题/positive_values/negative_values），是生成答案的唯一依据';
-COMMENT ON COLUMN questionnaire_tasks.detection_method IS '该次分析使用的检测方式：keyword(关键字) 或 ai';
+COMMENT ON COLUMN questionnaire_tasks.detection_method IS '解析方式：keyword、ai或structure（比例模式仅结构解析）';
 COMMENT ON COLUMN questionnaire_tasks.proxy_area IS '任务要求的代理地区；代理API凭据不进入数据库';
 COMMENT ON COLUMN questionnaire_tasks.proxy_required IS 'TRUE时代理异常禁止回退本机直连';

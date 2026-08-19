@@ -116,10 +116,10 @@ class QuestionnaireTask(Base):
     __tablename__ = "questionnaire_tasks"
     __table_args__ = (
         CheckConstraint(
-            "detection_method IN ('keyword', 'ai')", name="ck_questionnaire_tasks_detection_method"
+            "detection_method IN ('keyword', 'ai', 'structure')", name="ck_questionnaire_tasks_detection_method"
         ),
         CheckConstraint(
-            "submit_mode IN ('random', 'high_reliability')", name="ck_questionnaire_tasks_submit_mode"
+            "submit_mode IN ('random', 'high_reliability', 'proportional')", name="ck_questionnaire_tasks_submit_mode"
         ),
         CheckConstraint(
             "attitude IN ('positive', 'negative')", name="ck_questionnaire_tasks_attitude"
@@ -156,6 +156,18 @@ class QuestionnaireTask(Base):
             "ai_text_status IN ('disabled', 'pending', 'generating', 'ready', 'failed', 'cancelled')",
             name="ck_questionnaire_tasks_ai_text_status",
         ),
+        CheckConstraint(
+            "proportion_plan_status IN ('disabled', 'pending', 'ready', 'failed')",
+            name="ck_questionnaire_tasks_proportion_status",
+        ),
+        CheckConstraint(
+            "proportion_max_submit_attempts BETWEEN 1 AND 10",
+            name="ck_questionnaire_tasks_proportion_attempts",
+        ),
+        CheckConstraint(
+            "submit_max_attempts BETWEEN 1 AND 10",
+            name="ck_questionnaire_tasks_submit_attempts",
+        ),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -181,6 +193,7 @@ class QuestionnaireTask(Base):
     add_variation: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     variation_ratio: Mapped[Decimal] = mapped_column(Numeric(4, 3), nullable=False, default=Decimal("0.05"))
     browser_debug: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    submit_max_attempts: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=10)
 
     proxy_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     proxy_provider: Mapped[Optional[str]] = mapped_column(String(32))
@@ -206,6 +219,12 @@ class QuestionnaireTask(Base):
     ai_text_model: Mapped[Optional[str]] = mapped_column(String(128))
     ai_text_error: Mapped[Optional[str]] = mapped_column(Text)
 
+    proportion_config: Mapped[Optional[dict[str, Any]]] = mapped_column(JSONB)
+    proportion_plan_status: Mapped[str] = mapped_column(String(16), nullable=False, default="disabled")
+    proportion_plan_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    proportion_plan_seed: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    proportion_max_submit_attempts: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=10)
+
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     total_count: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     submitted_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
@@ -226,6 +245,9 @@ class QuestionnaireTask(Base):
         back_populates="task", cascade="all, delete-orphan"
     )
     text_answer_pools: Mapped[list["TaskTextAnswerPool"]] = relationship(
+        back_populates="task", cascade="all, delete-orphan"
+    )
+    proportion_answer_plans: Mapped[list["TaskProportionAnswerPlan"]] = relationship(
         back_populates="task", cascade="all, delete-orphan"
     )
 
@@ -306,3 +328,27 @@ class TaskTextAnswerPool(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     task: Mapped["QuestionnaireTask"] = relationship(back_populates="text_answer_pools")
+
+
+class TaskProportionAnswerPlan(Base):
+    """比例模式预先计算的每份问卷选择类题目答案。"""
+
+    __tablename__ = "task_proportion_answer_plans"
+    __table_args__ = (
+        UniqueConstraint("task_id", "submit_index", name="uq_task_proportion_plan_index"),
+        CheckConstraint(
+            "jsonb_typeof(answers) = 'object'", name="ck_task_proportion_plan_answers_object"
+        ),
+    )
+
+    id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), primary_key=True, server_default=func.gen_random_uuid()
+    )
+    task_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("questionnaire_tasks.id", ondelete="CASCADE"), nullable=False
+    )
+    submit_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    answers: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+    task: Mapped["QuestionnaireTask"] = relationship(back_populates="proportion_answer_plans")
