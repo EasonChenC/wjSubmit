@@ -1,43 +1,66 @@
 <template>
   <div class="page">
-    <div class="hero"><div><div class="eyebrow">WORKSPACE / TASKS</div><h2>任务管理</h2><p>集中创建、监控和管理问卷自动化任务</p></div><el-button class="create-btn" type="primary" size="large" @click="dialog=true">＋ 创建新任务</el-button></div>
-    <div class="stats"><div class="stat"><span>全部任务</span><strong>{{store.tasks.length}}</strong></div><div class="stat blue"><span>进行中</span><strong>{{activeCount}}</strong></div><div class="stat green"><span>已完成</span><strong>{{doneCount}}</strong></div><div class="stat orange"><span>成功提交</span><strong>{{successCount}}</strong></div></div>
-    <div class="card table-card"><el-empty v-if="!store.tasks.length" description="还没有任务"/><el-table v-else :data="store.tasks" stripe><el-table-column prop="task_id" label="任务 ID" min-width="220"/><el-table-column prop="url" label="问卷 URL" show-overflow-tooltip/><el-table-column label="代理地区" width="120"><template #default="{row}"><el-tag v-if="row.proxy?.enabled" type="info">{{row.proxy.area}}</el-tag><span v-else>直连</span></template></el-table-column><el-table-column label="进度" width="200"><template #default="{row}"><el-progress :percentage="row.progress"/></template></el-table-column><el-table-column label="状态" width="110"><template #default="{row}"><el-tag>{{statusText(row.status)}}</el-tag></template></el-table-column><el-table-column label="操作" width="150"><template #default="{row}"><el-button link type="primary" @click="router.push('/tasks/'+row.task_id)">查看</el-button><el-button link type="danger" @click="remove(row.task_id)">删除</el-button></template></el-table-column></el-table></div>
+    <div class="hero">
+      <div><div class="eyebrow">WORKSPACE / TASKS</div><h2>&#20219;&#21153;&#31649;&#29702;</h2><p>&#38598;&#20013;&#21019;&#24314;&#12289;&#30417;&#25511;&#21644;&#31649;&#29702;&#38382;&#21367;&#33258;&#21160;&#21270;&#20219;&#21153;</p></div>
+      <el-button class="create-btn" type="primary" size="large" @click="dialog=true">&#65291; &#21019;&#24314;&#26032;&#20219;&#21153;</el-button>
+    </div>
+    <div class="stats">
+      <div class="stat"><span>&#20840;&#37096;&#20219;&#21153;</span><strong>{{store.total}}</strong></div>
+      <div class="stat blue"><span>&#24403;&#21069;&#39029;&#36827;&#34892;&#20013;</span><strong>{{activeCount}}</strong></div>
+      <div class="stat green"><span>&#24403;&#21069;&#39029;&#24050;&#23436;&#25104;</span><strong>{{doneCount}}</strong></div>
+      <div class="stat orange"><span>&#24403;&#21069;&#39029;&#25104;&#21151;&#25552;&#20132;</span><strong>{{successCount}}</strong></div>
+    </div>
+    <div class="card table-card">
+      <div class="task-toolbar">
+        <el-input v-model="searchText" clearable placeholder="&#25628;&#32034;&#20219;&#21153;&#26631;&#39064;&#12289;&#38382;&#21367; URL &#25110;&#21019;&#24314;&#20154;&#21592;" @keyup.enter="searchTasks" @clear="searchTasks" />
+        <el-select v-if="userStore.role==='admin'" v-model="ownerId" clearable filterable placeholder="&#20840;&#37096;&#21019;&#24314;&#20154;&#21592;" @change="searchTasks">
+          <el-option v-for="owner in owners" :key="owner.id" :label="owner.username" :value="owner.id" />
+        </el-select>
+        <el-button type="primary" @click="searchTasks">&#25628;&#32034;</el-button>
+      </div>
+      <el-empty v-if="!store.tasks.length&&!store.loading" description="&#36824;&#27809;&#26377;&#20219;&#21153;" />
+      <el-table v-else :data="store.tasks" v-loading="store.loading" stripe>
+        <el-table-column label="&#20219;&#21153;&#21517;&#31216;" min-width="210"><template #default="{row}"><el-link type="primary" @click="router.push('/tasks/'+row.task_id)">{{row.title||'\u672a\u547d\u540d\u95ee\u5377'}}</el-link></template></el-table-column>
+        <el-table-column prop="url" label="&#38382;&#21367; URL" min-width="250" show-overflow-tooltip />
+        <el-table-column label="&#21019;&#24314;&#20154;&#21592;" width="130"><template #default="{row}"><el-tag type="info" effect="plain">{{row.creator_username||'\u672a\u77e5\u7528\u6237'}}</el-tag></template></el-table-column>
+        <el-table-column label="&#20195;&#29702;&#22320;&#21306;" width="110"><template #default="{row}"><el-tag v-if="row.proxy?.enabled" type="info">{{row.proxy.area}}</el-tag><span v-else>&#30452;&#36830;</span></template></el-table-column>
+        <el-table-column label="&#36827;&#24230;" width="180"><template #default="{row}"><el-progress :percentage="row.progress" /></template></el-table-column>
+        <el-table-column label="&#29366;&#24577;" width="110"><template #default="{row}"><el-tag>{{statusText(row.status)}}</el-tag></template></el-table-column>
+        <el-table-column label="&#25805;&#20316;" width="150" fixed="right"><template #default="{row}"><el-button link type="primary" @click="router.push('/tasks/'+row.task_id)">&#26597;&#30475;</el-button><el-button v-if="userStore.role==='admin'" link type="danger" @click="remove(row.task_id)">&#21024;&#38500;</el-button></template></el-table-column>
+      </el-table>
+      <div class="task-pagination"><span>&#20849; {{store.total}} &#26465;&#20219;&#21153;</span><el-pagination v-model:current-page="page" v-model:page-size="pageSize" layout="prev, pager, next" :total="store.total" @current-change="loadTasks" /></div>
+    </div>
 
-    <el-dialog v-model="dialog" title="创建新任务" width="720px" destroy-on-close>
-      <el-steps :active="step" finish-status="success" simple><el-step title="输入 URL"/><el-step title="预览问卷"/><el-step title="配置提交"/></el-steps>
-      <el-form v-if="step===0" class="wizard-form" :model="form"><el-form-item label="问卷 URL"><el-input v-model="form.url"/></el-form-item><el-form-item label="回答模式"><el-radio-group v-model="form.mode"><el-radio value="random">随机作答</el-radio><el-radio value="high_reliability">AI倾向作答</el-radio><el-radio value="proportional">按选项比例作答</el-radio></el-radio-group></el-form-item><el-alert v-if="form.mode==='proportional'" title="比例模式只解析页面题型和选项，不调用AI识别正反向题。" type="info" :closable="false"/><el-checkbox v-else v-model="form.use_ai" :disabled="!ai.available">使用 AI 识别反向题</el-checkbox><br/><el-button type="primary" :loading="loading" @click="analyze">解析问卷</el-button></el-form>
-      <div v-else-if="step===1"><el-alert title="问卷解析成功" type="success" show-icon/><p>共 {{questionnaire?.total_questions}} 道题</p><QuestionPreview v-if="questionnaire" :questions="questionnaire.questions"/><el-form v-if="form.mode==='proportional'" class="ratio-count"><el-form-item label="提交数量"><el-input-number v-model="form.count" :min="1" :max="1000"/><span class="inline-hint">比例的预计次数按此数量实时计算。</span></el-form-item></el-form><ProportionQuestionConfig v-if="questionnaire&&form.mode==='proportional'" ref="proportionEditor" v-model="form.proportion_config" :questions="questionnaire.questions" :count="form.count"/><el-button @click="step=0">上一步</el-button><el-button type="primary" @click="nextFromPreview">下一步</el-button></div>
+    <el-dialog v-model="dialog" title="&#21019;&#24314;&#26032;&#20219;&#21153;" width="720px" destroy-on-close>
+      <el-steps :active="step" finish-status="success" simple><el-step title="&#36755;&#20837; URL"/><el-step title="&#39044;&#35272;&#38382;&#21367;"/><el-step title="&#37197;&#32622;&#25552;&#20132;"/></el-steps>
+      <el-form v-if="step===0" class="wizard-form" :model="form">
+        <el-form-item label="&#38382;&#21367; URL"><el-input v-model="form.url"/></el-form-item>
+        <el-form-item label="&#22238;&#31572;&#27169;&#24335;"><el-radio-group v-model="form.mode"><el-radio value="random">&#38543;&#26426;&#20316;&#31572;</el-radio><el-radio value="high_reliability">AI &#20542;&#21521;&#20316;&#31572;</el-radio><el-radio value="proportional">&#25353;&#36873;&#39033;&#27604;&#20363;&#20316;&#31572;</el-radio></el-radio-group></el-form-item>
+        <el-alert v-if="form.mode==='proportional'" title="&#27604;&#20363;&#27169;&#24335;&#21482;&#35299;&#26512;&#39029;&#38754;&#39064;&#22411;&#21644;&#36873;&#39033;&#65292;&#19981;&#35843;&#29992; AI &#35782;&#21035;&#27491;&#21453;&#21521;&#39064;&#12290;" type="info" :closable="false"/>
+        <el-checkbox v-else-if="userStore.role==='admin'" v-model="form.use_ai" :disabled="!ai.available">&#20351;&#29992; AI &#35782;&#21035;&#21453;&#21521;&#39064;</el-checkbox><br/>
+        <el-button type="primary" :loading="loading" @click="analyze">&#20998;&#26512;&#38382;&#21367;</el-button>
+      </el-form>
+      <div v-else-if="step===1">
+        <el-alert title="&#38382;&#21367;&#20998;&#26512;&#25104;&#21151;" type="success" show-icon/><p>&#20849; {{questionnaire?.total_questions}} &#36947;&#39064;</p>
+        <QuestionPreview v-if="questionnaire" :questions="questionnaire.questions"/>
+        <el-form v-if="form.mode==='proportional'" class="ratio-count"><el-form-item label="&#25552;&#20132;&#25968;&#37327;"><el-input-number v-model="form.count" :min="1" :max="1000"/><span class="inline-hint">&#27604;&#20363;&#30340;&#39044;&#35745;&#27425;&#25968;&#25353;&#27492;&#25968;&#37327;&#23454;&#26102;&#35745;&#31639;&#12290;</span></el-form-item></el-form>
+        <ProportionQuestionConfig v-if="questionnaire&&form.mode==='proportional'" ref="proportionEditor" v-model="form.proportion_config" :questions="questionnaire.questions" :count="form.count"/>
+        <el-button @click="step=0">&#19978;&#19968;&#27493;</el-button><el-button type="primary" @click="nextFromPreview">&#19979;&#19968;&#27493;</el-button>
+      </div>
       <el-form v-else class="wizard-form" :model="form">
-        <el-form-item label="提交数量"><el-input-number v-model="form.count" :min="1" :max="1000"/></el-form-item>
-        <el-form-item label="模式"><el-tag>{{modeText(form.mode)}}</el-tag></el-form-item>
-        <el-form-item label="单份最大尝试"><el-input-number v-model="form.max_submit_attempts" :min="1" :max="10"/><span class="inline-hint">本份失败会重试，不会消费下一份任务配额。</span></el-form-item>
-        <el-form-item v-if="form.mode==='high_reliability'" label="态度"><el-radio-group v-model="form.attitude"><el-radio value="positive">积极</el-radio><el-radio value="negative">消极</el-radio></el-radio-group></el-form-item>
-        <el-alert v-if="form.mode==='proportional'" title="比例配置已在上一步完成；返回上一步可以继续调整。" type="info" :closable="false"/>
-
-        <el-divider content-position="left">文本题 AI 作答</el-divider>
-        <el-form-item label="AI 批量生成">
-          <el-switch v-model="form.ai_text.enabled" :disabled="!ai.available || textQuestionCount===0"/>
-          <div class="field-hint">
-            检测到 {{ textQuestionCount }} 道文本题（单行 {{ singleLineTextCount }} 道，多行 {{ multilineTextCount }} 道）；启用后将预生成
-            {{ form.count * textQuestionCount }} 条回答并按提交序号分配。
-          </div>
-          <el-link v-if="!ai.available" type="primary" :underline="false" @click="router.push('/settings/ai')">请先配置并启用 AI</el-link>
-          <div v-else-if="textQuestionCount===0" class="field-hint">当前问卷没有单行或多行文本题，此配置无需启用。</div>
-        </el-form-item>
-        <template v-if="form.ai_text.enabled">
-          <el-form-item label="每批生成份数">
-            <el-input-number v-model="form.ai_text.batch_size" :min="1" :max="50"/>
-            <span class="inline-hint">例如100份、每批20份，会调用5批。</span>
-          </el-form-item>
-          <el-form-item label="失败最大尝试">
-            <el-input-number v-model="form.ai_text.max_generation_attempts" :min="1" :max="5"/>
-          </el-form-item>
+        <el-form-item label="&#25552;&#20132;&#25968;&#37327;"><el-input-number v-model="form.count" :min="1" :max="1000"/></el-form-item>
+        <el-form-item label="&#27169;&#24335;"><el-tag>{{modeText(form.mode)}}</el-tag></el-form-item>
+        <el-form-item label="&#21333;&#20221;&#26368;&#22823;&#23581;&#35797;"><el-input-number v-model="form.max_submit_attempts" :min="1" :max="10"/><span class="inline-hint">&#26412;&#20221;&#22833;&#36133;&#20250;&#37325;&#35797;&#65292;&#19981;&#28040;&#32791;&#19979;&#19968;&#20221;&#37197;&#39069;&#12290;</span></el-form-item>
+        <el-form-item v-if="form.mode==='high_reliability'" label="&#24577;&#24230;"><el-radio-group v-model="form.attitude"><el-radio value="positive">&#31215;&#26497;</el-radio><el-radio value="negative">&#28040;&#26497;</el-radio></el-radio-group></el-form-item>
+        <el-alert v-if="form.mode==='proportional'" title="&#27604;&#20363;&#37197;&#32622;&#24050;&#22312;&#19978;&#19968;&#27493;&#23436;&#25104;&#65292;&#36820;&#22238;&#19978;&#19968;&#27493;&#21487;&#32487;&#32493;&#35843;&#25972;&#12290;" type="info" :closable="false"/>
+        <template v-if="userStore.role==='admin'">
+          <el-divider content-position="left">&#25991;&#26412;&#39064; AI &#20316;&#31572;</el-divider>
+          <el-form-item label="AI &#25209;&#37327;&#29983;&#25104;"><el-switch v-model="form.ai_text.enabled" :disabled="!ai.available||textQuestionCount===0"/><div class="field-hint">&#26816;&#27979;&#21040; {{textQuestionCount}} &#36947;&#25991;&#26412;&#39064;&#65288;&#21333;&#34892; {{singleLineTextCount}} &#36947;&#65292;&#22810;&#34892; {{multilineTextCount}} &#36947;&#65289;&#12290;</div><el-link v-if="!ai.available" type="primary" :underline="false" @click="router.push('/settings/ai')">&#35831;&#20808;&#37197;&#32622;&#24182;&#21551;&#29992; AI</el-link><div v-else-if="textQuestionCount===0" class="field-hint">&#24403;&#21069;&#38382;&#21367;&#27809;&#26377;&#25991;&#26412;&#39064;&#12290;</div></el-form-item>
+          <template v-if="form.ai_text.enabled"><el-form-item label="&#27599;&#25209;&#29983;&#25104;&#20221;&#25968;"><el-input-number v-model="form.ai_text.batch_size" :min="1" :max="50"/></el-form-item><el-form-item label="&#22833;&#36133;&#26368;&#22823;&#23581;&#35797;"><el-input-number v-model="form.ai_text.max_generation_attempts" :min="1" :max="5"/></el-form-item></template>
         </template>
-
         <ProxyConfigForm v-model="form.proxy"/>
-        <el-form-item label="浏览器调试"><el-switch v-model="form.debug"/></el-form-item>
-        <el-button @click="step=1">上一步</el-button><el-button type="primary" :loading="loading" @click="create">创建并开始任务</el-button>
+        <el-form-item label="&#27983;&#35272;&#22120;&#35843;&#35797;"><el-switch v-model="form.debug"/></el-form-item>
+        <el-button @click="step=1">&#19978;&#19968;&#27493;</el-button><el-button type="primary" :loading="loading" @click="create">&#21019;&#24314;&#24182;&#24320;&#22987;&#20219;&#21153;</el-button>
       </el-form>
     </el-dialog>
   </div>
@@ -47,21 +70,23 @@
 import {computed,onMounted,reactive,ref,watch} from 'vue'
 import {ElMessage,ElMessageBox} from 'element-plus'
 import {useRouter} from 'vue-router'
-import {useTaskStore} from '@/stores/task'; import {useAiStore} from '@/stores/ai'; import {analyzeQuestionnaire} from '@/api/questionnaire'
+import {useTaskStore} from '@/stores/task'; import {useAiStore} from '@/stores/ai'; import {useUserStore} from '@/stores/user'; import {analyzeQuestionnaire} from '@/api/questionnaire'; import {listUsers} from '@/api/users'
 import type {ProxyConfig,Questionnaire} from '@/types'
 import QuestionPreview from '@/components/Questionnaire/QuestionPreview.vue'; import ProxyConfigForm from '@/components/Task/ProxyConfigForm.vue'; import ProportionQuestionConfig from '@/components/Task/ProportionQuestionConfig.vue'
 const defaultProxy=():ProxyConfig=>({enabled:false,provider:'kuaidaili',area:'',carrier:0,rotate_per_submission:true,dedup:true,verify_exit:true,location_match:'relaxed',required:true,max_acquire_attempts:3})
-const store=useTaskStore(),ai=useAiStore(),router=useRouter();const dialog=ref(false),step=ref(0),loading=ref(false),questionnaire=ref<Questionnaire>(),proportionEditor=ref<any>()
+const store=useTaskStore(),ai=useAiStore(),userStore=useUserStore(),router=useRouter();const dialog=ref(false),step=ref(0),loading=ref(false),questionnaire=ref<Questionnaire>(),proportionEditor=ref<any>()
 const form=reactive({url:'',count:10,max_submit_attempts:10,mode:'random' as 'random'|'high_reliability'|'proportional',attitude:'positive' as 'positive'|'negative',use_ai:localStorage.getItem('questionnaire_use_ai')==='true',add_variation:false,variation_ratio:15,debug:false,proxy:defaultProxy(),ai_text:{enabled:false,batch_size:20,max_generation_attempts:3},proportion_config:{questions:[] as any[],seed:0,max_submit_attempts:10}})
-watch(()=>form.use_ai,v=>localStorage.setItem('questionnaire_use_ai',String(v)));onMounted(()=>{store.fetchList();ai.fetchConfig()})
-const activeCount=computed(()=>store.tasks.filter(t=>t.status==='processing'||t.status==='pending').length),doneCount=computed(()=>store.tasks.filter(t=>t.status==='completed').length),successCount=computed(()=>store.tasks.reduce((n,t)=>n+t.submitted,0));const statusText=(s:string)=>({pending:'等待中',processing:'进行中',completed:'已完成',failed:'失败',cancelled:'已停止'}[s]||s)
+watch(()=>form.use_ai,v=>localStorage.setItem('questionnaire_use_ai',String(v)));const page=ref(1),pageSize=ref(20),searchText=ref(''),ownerId=ref(''),owners=ref<Array<{id:string;username:string}>>([]);const loadTasks=()=>store.fetchList({q:searchText.value||undefined,owner_id:ownerId.value||undefined,offset:(page.value-1)*pageSize.value,limit:pageSize.value});const searchTasks=()=>{page.value=1;loadTasks()};onMounted(async()=>{await loadTasks();if(userStore.role==='admin'){ai.fetchConfig();try{owners.value=(await listUsers({limit:100,status:'active'})).data.data.items}catch{}}})
+const activeCount=computed(()=>store.tasks.filter(t=>t.status==='processing'||t.status==='pending').length),doneCount=computed(()=>store.tasks.filter(t=>t.status==='completed').length),successCount=computed(()=>store.tasks.reduce((n,t)=>n+t.submitted,0));const statusText=(v:string)=>({pending:'\u7b49\u5f85\u4e2d',processing:'\u8fdb\u884c\u4e2d',completed:'\u5df2\u5b8c\u6210',failed:'\u5931\u8d25',cancelled:'\u5df2\u505c\u6b62'} as Record<string,string>)[v]||v
 const singleLineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='text').length||0)
 const multilineTextCount=computed(()=>questionnaire.value?.questions.filter(q=>q.type==='textarea').length||0)
 const textQuestionCount=computed(()=>singleLineTextCount.value+multilineTextCount.value)
-const modeText=(mode:string)=>({random:'随机作答',high_reliability:'AI倾向作答',proportional:'按选项比例作答'} as Record<string,string>)[mode]||mode
-const remove=async(id:string)=>{try{await ElMessageBox.confirm('确定删除该任务吗？','确认');await store.remove(id);ElMessage.success('已删除')}catch{}}
-const analyze=async()=>{if(!form.url)return ElMessage.warning('请输入问卷 URL');loading.value=true;try{form.proportion_config.questions=[];questionnaire.value=(await analyzeQuestionnaire(form.url,form.use_ai,form.mode==='proportional'?'proportional':'standard')).data.data;step.value=1}catch(error:any){ElMessage.error(error.response?.data?.detail||'解析失败')}finally{loading.value=false}}
+const modeText=(mode:string)=>({random:'\u968f\u673a\u4f5c\u7b54',high_reliability:'AI\u503e\u5411\u4f5c\u7b54',proportional:'\u6309\u9009\u9879\u6bd4\u4f8b\u4f5c\u7b54'} as Record<string,string>)[mode]||mode
+const remove=async(id:string)=>{if(userStore.role!=='admin')return;try{await ElMessageBox.confirm('\u786e\u5b9a\u5220\u9664\u8be5\u4efb\u52a1\u5417\uff1f','\u786e\u8ba4');await store.remove(id);await loadTasks();ElMessage.success('\u5df2\u5220\u9664')}catch{}}
+const analyze=async()=>{if(!form.url)return ElMessage.warning('\u8bf7\u8f93\u5165\u95ee\u5377 URL');loading.value=true;try{form.proportion_config.questions=[];questionnaire.value=(await analyzeQuestionnaire(form.url,form.use_ai,form.mode==='proportional'?'proportional':'standard')).data.data;step.value=1}catch(error:any){ElMessage.error(error.response?.data?.detail||'\u5206\u6790\u5931\u8d25')}finally{loading.value=false}}
 const nextFromPreview=()=>{if(form.mode==='proportional'){const error=proportionEditor.value?.validate();if(error)return ElMessage.warning(error)}step.value=2}
-const create=async()=>{if(!questionnaire.value)return ElMessage.error('请先解析问卷');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('请输入代理目标地区');if(form.ai_text.enabled&&!ai.available)return ElMessage.warning('请先配置并启用 AI');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy,ai_text:form.ai_text,proportion_config:form.mode==='proportional'?form.proportion_config:undefined,config:{attitude:form.attitude,add_variation:form.mode==='high_reliability'?form.add_variation:false,variation_ratio:form.mode==='high_reliability'?form.variation_ratio/100:0.05,debug:form.debug,max_submit_attempts:form.max_submit_attempts}});dialog.value=false;step.value=0;await router.push('/tasks/'+task.task_id)}catch(error:any){ElMessage.error(error.response?.data?.detail||'创建任务失败')}finally{loading.value=false}}
+const create=async()=>{if(!questionnaire.value)return ElMessage.error('\u8bf7\u5148\u5206\u6790\u95ee\u5377');if(form.proxy.enabled&&!form.proxy.area.trim())return ElMessage.warning('\u8bf7\u8f93\u5165\u4ee3\u7406\u76ee\u6807\u5730\u533a');if(form.ai_text.enabled&&userStore.role!=='admin')return ElMessage.warning('\u4ec5\u7ba1\u7406\u5458\u53ef\u4f7f\u7528 AI \u529f\u80fd');if(form.ai_text.enabled&&!ai.available)return ElMessage.warning('\u8bf7\u5148\u914d\u7f6e\u5e76\u542f\u7528 AI');loading.value=true;try{const task=await store.create({task_id:questionnaire.value.task_id,url:form.url,count:form.count,mode:form.mode,proxy:form.proxy,ai_text:form.ai_text,proportion_config:form.mode==='proportional'?form.proportion_config:undefined,config:{attitude:form.attitude,add_variation:form.mode==='high_reliability'?form.add_variation:false,variation_ratio:form.mode==='high_reliability'?form.variation_ratio/100:0.05,debug:form.debug,max_submit_attempts:form.max_submit_attempts}});dialog.value=false;step.value=0;await router.push('/tasks/'+task.task_id)}catch(error:any){ElMessage.error(error.response?.data?.detail||'\u521b\u5efa\u4efb\u52a1\u5931\u8d25')}finally{loading.value=false}}
 </script>
-<style scoped>.hero{display:flex;justify-content:space-between;align-items:center;padding:28px 30px;border-radius:16px;background:linear-gradient(110deg,#1d3263,#4263b8);color:#fff}.eyebrow{font-size:11px;letter-spacing:2px;opacity:.65}.hero h2{margin:7px 0}.hero p{margin:0}.create-btn{background:#fff;color:#3454bd}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{padding:18px 20px;border-radius:12px;background:#fff;border-left:4px solid #7c8ca8}.stat span{display:block;color:#8b98aa}.stat strong{display:block;font-size:25px;margin-top:8px}.blue{border-color:#5d7df2}.green{border-color:#35b98a}.orange{border-color:#f3a43b}.table-card{padding:10px 18px}.wizard-form{padding:28px 20px}.el-steps{margin:15px 0 25px}.field-hint{width:100%;margin-top:5px;color:#8792a6;font-size:12px;line-height:1.5}.inline-hint{margin-left:12px;color:#8792a6;font-size:12px}.ratio-count{margin-top:18px}</style>
+<style scoped>.hero{display:flex;justify-content:space-between;align-items:center;padding:28px 30px;border-radius:16px;background:linear-gradient(110deg,#1d3263,#4263b8);color:#fff}.eyebrow{font-size:11px;letter-spacing:2px;opacity:.65}.hero h2{margin:7px 0}.hero p{margin:0}.create-btn{background:#fff;color:#3454bd}.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:20px 0}.stat{padding:18px 20px;border-radius:12px;background:#fff;border-left:4px solid #7c8ca8}.stat span{display:block;color:#8b98aa}.stat strong{display:block;font-size:25px;margin-top:8px}.blue{border-color:#5d7df2}.green{border-color:#35b98a}.orange{border-color:#f3a43b}.table-card{padding:10px 18px}.wizard-form{padding:28px 20px}.el-steps{margin:15px 0 25px}.field-hint{width:100%;margin-top:5px;color:#8792a6;font-size:12px;line-height:1.5}.inline-hint{margin-left:12px;color:#8792a6;font-size:12px}.ratio-count{margin-top:18px}.task-toolbar{display:grid;grid-template-columns:minmax(280px,1fr) 190px auto;gap:12px;margin-bottom:16px}.task-pagination{display:flex;justify-content:space-between;align-items:center;padding:16px 4px 4px;color:#8792a6;font-size:13px}@media(max-width:800px){.task-toolbar{grid-template-columns:1fr}}</style>
+
+

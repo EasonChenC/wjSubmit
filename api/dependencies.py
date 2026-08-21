@@ -1,37 +1,31 @@
-# api/dependencies.py
-"""
-API依赖注入
-
-提供通用的依赖函数。
-"""
-
+from datetime import datetime, timezone
+from uuid import UUID
 from typing import Optional
-from fastapi import Header, HTTPException, status
+from fastapi import Depends, Header, HTTPException, Request, status
+from sqlalchemy import select
+from sqlalchemy.orm import selectinload
+from sqlalchemy.ext.asyncio import AsyncSession
+from db.session import get_session
+from db.models import User
+from .security import decode_token
 
+async def get_current_user(request: Request, session: AsyncSession = Depends(get_session)) -> User:
+    token = request.cookies.get("access_token") or (request.headers.get("Authorization", "").removeprefix("Bearer ").strip())
+    if not token: raise HTTPException(401, "Authentication required")
+    payload = decode_token(token, "access")
+    try: uid = UUID(payload["sub"])
+    except (ValueError, KeyError): raise HTTPException(401, "Authentication required")
+    user = await session.scalar(select(User).options(selectinload(User.role)).where(User.id == uid))
+    now = datetime.now(timezone.utc)
+    if not user or not user.is_active or user.deleted_at is not None or (user.is_locked and (not user.locked_until or user.locked_until > now)):
+        raise HTTPException(401, "Authentication required")
+    return user
+
+def require_roles(*roles: str):
+    async def dep(user: User = Depends(get_current_user)) -> User:
+        if not user.role or user.role.code not in roles: raise HTTPException(403, "Permission denied")
+        return user
+    return dep
 
 async def verify_api_key(x_api_key: Optional[str] = Header(None)) -> bool:
-    """
-    验证API密钥（可选）
-
-    生产环境可启用此功能进行API访问控制。
-
-    Args:
-        x_api_key: HTTP Header中的API密钥
-
-    Returns:
-        验证是否通过
-
-    Raises:
-        HTTPException: 密钥无效时抛出401异常
-    """
-    # 开发环境：跳过验证
-    # 生产环境：取消注释下面的代码
-
-    # VALID_API_KEYS = ["your-secret-key-here"]
-    # if x_api_key not in VALID_API_KEYS:
-    #     raise HTTPException(
-    #         status_code=status.HTTP_401_UNAUTHORIZED,
-    #         detail="Invalid API Key"
-    #     )
-
     return True

@@ -11,9 +11,10 @@ from ..models import AIConfigRequest, AIConfigResponse, AITestResponse, DataResp
 from ai import ai_config_manager
 from ai.client import AIClient
 from db.session import get_session
+from api.dependencies import require_roles
 
 
-router = APIRouter(prefix="/api/ai", tags=["ai"])
+router = APIRouter(prefix="/api/ai", tags=["ai"], dependencies=[Depends(require_roles("admin"))])
 
 
 @router.get("/config", response_model=DataResponse)

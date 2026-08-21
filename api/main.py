@@ -6,12 +6,30 @@ Questionnaire Automation REST API Service.
 """
 
 from contextlib import asynccontextmanager
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
 from db.session import init_engine, close_engine
-from .routers import questionnaire, ai
+from .routers import questionnaire, ai, auth, users
+
+
+load_dotenv()
+
+
+def _cors_origins() -> list[str]:
+    """Read the comma-separated CORS allow-list from the environment.
+
+    CORS_ORIGINS is intentionally the single source of truth; no localhost
+    origins are added implicitly when the setting is absent.
+    """
+    raw = os.getenv("CORS_ORIGINS", "")
+    origins = [origin.strip().rstrip("/") for origin in raw.split(",") if origin.strip()]
+    if "*" in origins:
+        raise RuntimeError("CORS_ORIGINS must list explicit origins; '*' is not allowed with credentials")
+    return origins
 
 
 @asynccontextmanager
@@ -36,15 +54,26 @@ app = FastAPI(
 # Configure CORS (allow cross-origin requests)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Should restrict to specific domains in production
+    allow_origins=_cors_origins(),
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization", "X-CSRF-Token"],
 )
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'"
+    return response
 
 # Register router
 app.include_router(questionnaire.router)
 app.include_router(ai.router)
+app.include_router(auth.router)
+app.include_router(users.router)
 
 
 @app.get("/")

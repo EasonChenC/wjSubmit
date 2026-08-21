@@ -18,8 +18,9 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from playwright.async_api import async_playwright
 from playwright.async_api import BrowserContext
-from sqlalchemy import select
+from sqlalchemy import select, func, or_
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from ..models import (
     AnalyzeRequest, DataResponse, AnalyzeResponse, QuestionResponse,
@@ -46,13 +47,43 @@ from db.models import (
     TaskSubmission,
     TaskTextAnswerPool,
     TaskProportionAnswerPlan,
+    AuditLog,
 )
 from proxy.config import KuaidailiSettings
 from proxy.models import ProxyLease
 from proxy.service import ProxyService, browser_launch_proxy, create_submission_context
+from api.dependencies import get_current_user
+from db.models import User
 
 
-router = APIRouter(prefix="/api/questionnaire", tags=["questionnaire"])
+router = APIRouter(prefix="/api/questionnaire", tags=["questionnaire"], dependencies=[Depends(get_current_user)])
+
+
+def _is_admin(user: User) -> bool:
+    return bool(user.role and user.role.code == "admin")
+
+
+def _task_scope(stmt, user: User):
+    """Administrators see all tasks; other roles are always owner-scoped."""
+    return stmt if _is_admin(user) else stmt.where(QuestionnaireTask.user_id == user.id)
+
+
+async def _claim_legacy_tasks(session: AsyncSession, user: User) -> None:
+    """Assign pre-authentication tasks to the first/current administrator.
+
+    Legacy rows were intentionally created with user_id=NULL.  Once the user
+    module is enabled, claiming them preserves their visibility while keeping
+    all newly-created rows owner-scoped.
+    """
+    if not _is_admin(user):
+        return
+    legacy = (await session.scalars(
+        select(QuestionnaireTask).where(QuestionnaireTask.user_id.is_(None))
+    )).all()
+    if legacy:
+        for task in legacy:
+            task.user_id = user.id
+        await session.commit()
 
 
 def proxy_config_from_settings(settings: KuaidailiSettings) -> dict:
@@ -348,7 +379,7 @@ async def prepare_proportion_answer_plans(
 
 @router.post("/analyze", response_model=DataResponse)
 async def analyze_questionnaire(
-    request: AnalyzeRequest, session: AsyncSession = Depends(get_session)
+    request: AnalyzeRequest, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)
 ):
     """
     Analyze questionnaire structure
@@ -439,6 +470,7 @@ async def analyze_questionnaire(
         # 5. Persist analyzed schema as a new task (status=pending, no submit
         # config yet — that's filled in by /submit)
         task_row = QuestionnaireTask(
+            user_id=current_user.id,
             url=str(request.url),
             title=schema.metadata.get('title') or None,
             activity_id=schema.activity_id,
@@ -744,7 +776,7 @@ async def submit_questionnaire_task(task_id: str):
 async def submit_questionnaire(
     request: SubmitRequest,
     background_tasks: BackgroundTasks,
-    session: AsyncSession = Depends(get_session),
+    session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user),
 ):
     """
     Submit questionnaire (background task)
@@ -761,7 +793,7 @@ async def submit_questionnaire(
         Task ID and initial status
     """
     try:
-        task_row = await session.get(QuestionnaireTask, request.task_id)
+        task_row = await session.scalar(select(QuestionnaireTask).where(QuestionnaireTask.id == request.task_id, QuestionnaireTask.user_id == current_user.id))
         if task_row is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -863,8 +895,83 @@ async def submit_questionnaire(
         )
 
 
+@router.get("/tasks", response_model=DataResponse)
+async def list_tasks(
+    q: str | None = None,
+    owner_id: str | None = None,
+    offset: int = 0,
+    limit: int = 20,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    await _claim_legacy_tasks(session, current_user)
+    filters = []
+    if q:
+        pattern = f"%{q.strip()}%"
+        filters.append(or_(QuestionnaireTask.title.ilike(pattern), QuestionnaireTask.url.ilike(pattern), User.username.ilike(pattern)))
+    if owner_id and _is_admin(current_user):
+        filters.append(QuestionnaireTask.user_id == owner_id)
+
+    count_stmt = _task_scope(
+        select(func.count(QuestionnaireTask.id)).join(User, QuestionnaireTask.user_id == User.id, isouter=True).where(*filters), current_user
+    )
+    total = await session.scalar(count_stmt)
+    stmt = _task_scope(
+        select(QuestionnaireTask)
+        .options(selectinload(QuestionnaireTask.user))
+        .join(User, QuestionnaireTask.user_id == User.id, isouter=True)
+        .where(*filters),
+        current_user,
+    ).order_by(QuestionnaireTask.created_at.desc()).offset(max(offset, 0)).limit(min(max(limit, 1), 100))
+    rows = (await session.scalars(stmt)).all()
+    items = [{
+        "task_id": str(row.id),
+        "title": row.title or "\u672a\u547d\u540d\u95ee\u5377",
+        "url": row.url,
+        "status": row.status,
+        "submitted": row.submitted_count,
+        "failed": row.failed_count,
+        "total": row.total_count,
+        "progress": row.progress,
+        "start_time": (row.started_at or row.created_at).isoformat(),
+        "end_time": row.finished_at.isoformat() if row.finished_at else None,
+        "creator_id": str(row.user_id) if row.user_id else None,
+        "creator_username": row.user.username if row.user else "\u672a\u77e5\u7528\u6237",
+        "proxy": {
+            "enabled": row.proxy_enabled,
+            "provider": row.proxy_provider or "kuaidaili",
+            "area": row.proxy_area or "",
+            "carrier": row.proxy_carrier,
+            "rotate_per_submission": row.proxy_rotate_per_submission,
+            "dedup": row.proxy_dedup,
+            "verify_exit": row.proxy_verify_exit,
+            "location_match": row.proxy_location_match,
+            "required": row.proxy_required,
+            "max_acquire_attempts": row.proxy_max_acquire_attempts,
+        },
+    } for row in rows]
+    return DataResponse(success=True, message="Tasks retrieved", data={"items": items, "total": total or 0})
+
+
+@router.delete("/tasks/{task_id}", response_model=DataResponse)
+async def delete_task(
+    task_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    if not _is_admin(current_user):
+        raise HTTPException(status_code=403, detail="Permission denied")
+    task = await session.scalar(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id))
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+    session.add(AuditLog(user_id=current_user.id, action="task.delete", resource_type="questionnaire_task", resource_id=str(task.id), metadata_json={"title": task.title or ""}))
+    await session.delete(task)
+    await session.commit()
+    return DataResponse(success=True, message="Task deleted", data={"task_id": task_id})
+
+
 @router.get("/submit/{task_id}", response_model=DataResponse)
-async def get_task_status(task_id: str, session: AsyncSession = Depends(get_session)):
+async def get_task_status(task_id: str, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     """
     Query task status
 
@@ -874,7 +981,7 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
     Returns:
         Task status information
     """
-    task_row = await session.get(QuestionnaireTask, task_id)
+    task_row = await session.scalar(_task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user))
     if task_row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -947,7 +1054,7 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
 
 
 @router.post("/submit/{task_id}/cancel", response_model=DataResponse)
-async def cancel_task(task_id: str, session: AsyncSession = Depends(get_session)):
+async def cancel_task(task_id: str, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
     """
     Stop a running task
 
@@ -963,7 +1070,7 @@ async def cancel_task(task_id: str, session: AsyncSession = Depends(get_session)
     Returns:
         Updated task status
     """
-    task_row = await session.get(QuestionnaireTask, task_id)
+    task_row = await session.scalar(_task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user))
     if task_row is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
