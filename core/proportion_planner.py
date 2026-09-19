@@ -254,6 +254,8 @@ def build_proportion_plan(
         seen.add(question_id)
 
         question = schema_map[question_id]
+        if proportion_config.get("exclude_scale_questions") and question.metadata.get("is_scale", False):
+            raise ProportionConfigError(f"Scale question {question.id} cannot use option ratios")
         values, percentages = _validate_question_config(question, config)
         if question.type == QuestionType.CHECKBOX:
             counts = independent_counts(percentages, submission_count)

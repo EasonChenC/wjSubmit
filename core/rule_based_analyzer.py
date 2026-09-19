@@ -1074,6 +1074,11 @@ class RuleBasedAnalyzer:
                         except ValueError:
                             pass
 
+                # 题目可能只配置最少选择数，且该值大于系统默认上限 4。
+                # 此时不能把倒置的 min/max 暴露给 API 和前端；未配置
+                # maxvalue 时，将生成上限至少提升到页面要求的下限。
+                max_choices = max(min_choices, max_choices)
+
                 strategy.params['min'] = min_choices
                 strategy.params['max'] = max_choices
 
