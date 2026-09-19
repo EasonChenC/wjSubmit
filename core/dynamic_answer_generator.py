@@ -254,26 +254,8 @@ class DynamicAnswerGenerator:
         return self._generate_radio_answer(question, strategy)
 
     def _generate_text_answer(self, question: Question, strategy: AnswerStrategy) -> str:
-        """生成文本输入题答案
-
-        Args:
-            question: 题目对象
-            strategy: 答案策略
-
-        Returns:
-            文本字符串
-        """
-        if strategy.type == "text_pool":
-            pool = strategy.params.get('pool', [])
-            if pool:
-                return random.choice(pool)
-
-        # 默认文本池（通用）
-        default_pool = [
-            '北京', '上海', '广州', '深圳', '杭州', '南京',
-            '成都', '武汉', '西安', '重庆', '天津', '苏州'
-        ]
-        return random.choice(default_pool)
+        """Return the neutral value when no AI override was supplied."""
+        return "\u65e0"
 
     def _generate_textarea_answer(self, question: Question, strategy: AnswerStrategy) -> str:
         """生成多行文本题答案

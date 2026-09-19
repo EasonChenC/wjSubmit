@@ -13,18 +13,19 @@ re-visited or re-analyzed at submit time.
 
 import asyncio
 import random
+import uuid
 from dataclasses import replace
 from datetime import datetime, timezone
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from playwright.async_api import async_playwright
 from playwright.async_api import BrowserContext
-from sqlalchemy import select, func, or_
+from sqlalchemy import select, func, or_, update, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from ..models import (
     AnalyzeRequest, DataResponse, AnalyzeResponse, QuestionResponse,
-    SubmitRequest, TaskStatusResponse, SubmitResult,
+    SubmitRequest, TaskStatusResponse, SubmitResult, TaskConfigUpdate,
     DetectionRequest, DetectionResponse, DetectionResult, ProxyConfig
 )
 from core.rule_based_analyzer import RuleBasedAnalyzer
@@ -84,6 +85,42 @@ async def _claim_legacy_tasks(session: AsyncSession, user: User) -> None:
         for task in legacy:
             task.user_id = user.id
         await session.commit()
+
+
+async def _task_checkpoint(session: AsyncSession, task: QuestionnaireTask):
+    rows = (await session.execute(
+        select(TaskSubmission.submit_index, TaskSubmission.status)
+        .where(TaskSubmission.task_id == task.id)
+    )).all()
+    successes = {index for index, state in rows if state == "success"}
+    failed = sum(1 for _, state in rows if state == "failed")
+    task.submitted_count = len(successes)
+    task.failed_count = failed
+    task.progress = min(100, int(len(successes) * 100 / max(task.total_count, 1)))
+    return successes, failed
+
+
+async def _next_attempt_no(session: AsyncSession, task_id, submit_index: int) -> int:
+    latest = await session.scalar(
+        select(func.max(TaskSubmission.attempt_no)).where(
+            TaskSubmission.task_id == task_id,
+            TaskSubmission.submit_index == submit_index,
+        )
+    )
+    return (latest or 0) + 1
+
+
+async def _previous_answers(session: AsyncSession, task_id, submit_index: int):
+    return await session.scalar(
+        select(TaskSubmission.generated_answers)
+        .where(
+            TaskSubmission.task_id == task_id,
+            TaskSubmission.submit_index == submit_index,
+            TaskSubmission.generated_answers.is_not(None),
+        )
+        .order_by(TaskSubmission.attempt_no.desc())
+        .limit(1)
+    )
 
 
 def proxy_config_from_settings(settings: KuaidailiSettings) -> dict:
@@ -284,8 +321,12 @@ def text_overrides_for_submission(
     return overrides
 
 
-def _ratio_metadata(question) -> dict:
-    eligible = question.type in ELIGIBLE_TYPES and bool(question.options)
+def _ratio_metadata(question, *, is_scale: bool, allow_scale: bool) -> dict:
+    eligible = (
+        question.type in ELIGIBLE_TYPES
+        and bool(question.options)
+        and (allow_scale or not is_scale)
+    )
     minimum = maximum = None
     if question.type == QuestionType.CHECKBOX:
         minimum = int((question.strategy.params or {}).get("min", 1 if question.required else 0))
@@ -338,7 +379,12 @@ async def prepare_proportion_answer_plans(
     schema: QuestionnaireSchema,
 ) -> dict[int, dict]:
     """Create/reopen the complete deterministic proportional answer plan."""
-    if task_row.submit_mode != "proportional":
+    enabled_configs = [
+        item for item in (task_row.proportion_config or {}).get("questions", [])
+        if item.get("enabled", True)
+    ]
+    if not enabled_configs:
+        task_row.proportion_plan_status = "disabled"
         return {}
 
     result = await session.execute(
@@ -457,7 +503,11 @@ async def analyze_questionnaire(
                 detection_method=question.metadata.get('detection_method') if is_scale else None,
                 positive_values=question.metadata.get('positive_values') if is_scale else None,
                 negative_values=question.metadata.get('negative_values') if is_scale else None,
-                **_ratio_metadata(question),
+                **_ratio_metadata(
+                    question,
+                    is_scale=is_scale,
+                    allow_scale=request.analysis_mode == "proportional",
+                ),
                 **display_metadata[question.id],
             ))
 
@@ -564,212 +614,187 @@ async def submit_one_questionnaire(
         await page.close()
 
 
-async def submit_questionnaire_task(task_id: str):
-    """
-    Background task: batch submit questionnaires
-
-    Reads the previously analyzed schema from questionnaire_tasks.analyzed_schema
-    (populated by analyze_questionnaire) and generates answers directly from it.
-    The questionnaire page is never re-visited for analysis here.
-
-    Args:
-        task_id: questionnaire_tasks.id (as string)
-        All execution and proxy policy fields are restored from the task row.
-    """
+async def submit_questionnaire_task(task_id: str, execution_token: str):
+    """Execute or resume a task from its persisted successful-index checkpoint."""
     async with session_scope() as session:
         task_row = await session.get(QuestionnaireTask, task_id)
-        if task_row is None:
+        if task_row is None or str(task_row.execution_token) != execution_token:
             return
-
         try:
+            success_indexes, _ = await _task_checkpoint(session, task_row)
+            if len(success_indexes) >= task_row.total_count:
+                task_row.status = "completed"
+                task_row.progress = 100
+                task_row.finished_at = datetime.now(timezone.utc)
+                task_row.execution_token = None
+                await session.commit()
+                return
+
             task_row.status = "processing"
-            task_row.started_at = datetime.now(timezone.utc)
+            task_row.started_at = task_row.started_at or datetime.now(timezone.utc)
+            task_row.finished_at = None
+            task_row.heartbeat_at = datetime.now(timezone.utc)
+            task_row.error_message = None
             await session.commit()
 
-            # Rebuild schema from the stored analysis — no re-fetch/re-analyze
-            schema: QuestionnaireSchema = QuestionnaireSchema.from_dict(task_row.analyzed_schema)
-            url = task_row.url
-
+            schema = QuestionnaireSchema.from_dict(task_row.analyzed_schema)
             generator = DynamicAnswerGenerator(
-                schema=schema,
-                mode=task_row.submit_mode,
-                attitude=task_row.attitude,
-                add_variation=task_row.add_variation,
-                variation_ratio=float(task_row.variation_ratio)
+                schema=schema, mode=task_row.submit_mode,
+                attitude=task_row.attitude, add_variation=task_row.add_variation,
+                variation_ratio=float(task_row.variation_ratio),
             )
-
-            success_count = 0
-            fail_count = 0
-            count = task_row.total_count
-            headless = not task_row.browser_debug
-            cancelled = False
-            # AI开放题在启动浏览器之前全部生成并持久化；只有状态 ready
-            # 后才进入提交循环，避免模型延迟占用活跃 BrowserContext。
-            text_answer_pools = await prepare_text_answer_pools(
-                session, task_row, schema
-            )
-            proportion_plans = await prepare_proportion_answer_plans(
-                session, task_row, schema
-            )
-            # A disabled task must not even load provider credentials/settings.
-            # This keeps the direct path completely independent from an expired
-            # Kuaidaili order or a globally enabled provider environment flag.
-            base_proxy_settings = (
-                KuaidailiSettings.from_env()
-                if task_row.proxy_enabled
-                else KuaidailiSettings(enabled=False)
-            )
+            text_answer_pools = await prepare_text_answer_pools(session, task_row, schema)
+            proportion_plans = await prepare_proportion_answer_plans(session, task_row, schema)
+            base_proxy_settings = KuaidailiSettings.from_env() if task_row.proxy_enabled else KuaidailiSettings(enabled=False)
             proxy_settings = proxy_settings_from_task(task_row, base_proxy_settings)
             proxy_service = ProxyService(proxy_settings) if proxy_settings.enabled else None
+            cancelled = False
 
             async with async_playwright() as playwright:
-                launch_proxy = browser_launch_proxy(proxy_settings)
                 browser = await playwright.chromium.launch(
-                    headless=headless,
-                    slow_mo=100 if not headless else 0,
-                    proxy=launch_proxy,
+                    headless=not task_row.browser_debug,
+                    slow_mo=100 if task_row.browser_debug else 0,
+                    proxy=browser_launch_proxy(proxy_settings),
                 )
                 try:
-                    for i in range(count):
-                # Refresh from DB to pick up a cancel_requested flag set by
-                # the /submit/{task_id}/cancel endpoint from another request —
-                # this long-lived session otherwise never sees that commit.
-                        await session.refresh(task_row)
-                        if task_row.cancel_requested:
-                            cancelled = True
-                            break
+                    for submit_index in range(1, task_row.total_count + 1):
+                        if submit_index in success_indexes:
+                            continue
+                        while submit_index not in success_indexes:
+                            await session.refresh(task_row)
+                            if str(task_row.execution_token) != execution_token:
+                                return
+                            if task_row.cancel_requested:
+                                cancelled = True
+                                break
 
-                        submission = TaskSubmission(
-                            task_id=task_row.id,
-                            submit_index=i + 1,
-                            status="pending",
-                            started_at=datetime.now(timezone.utc),
-                        )
-                        session.add(submission)
-
-                        context = None
-                        lease = None
-                        try:
-                            answer_overrides = dict(proportion_plans.get(i + 1, {}))
-                            text_overrides = text_overrides_for_submission(text_answer_pools, i + 1)
-                            overlap = set(answer_overrides) & set(text_overrides)
-                            if overlap:
-                                raise ValueError(f"Conflicting answer overrides: {sorted(overlap)}")
-                            answer_overrides.update(text_overrides)
-                            answers = generator.generate_answers(answer_overrides)
+                            attempt_no = await _next_attempt_no(session, task_row.id, submit_index)
+                            submission = TaskSubmission(
+                                task_id=task_row.id, submit_index=submit_index,
+                                attempt_no=attempt_no, execution_no=task_row.execution_no,
+                                status="pending", started_at=datetime.now(timezone.utc),
+                            )
+                            session.add(submission)
+                            context = None
+                            lease = None
                             max_submit_attempts = (
                                 min(task_row.submit_max_attempts, task_row.proportion_max_submit_attempts)
-                                if task_row.submit_mode == "proportional"
-                                else task_row.submit_max_attempts
+                                if task_row.submit_mode == "proportional" else task_row.submit_max_attempts
                             )
-                            last_error = "Unknown error"
-                            succeeded = False
-                            for submit_attempt in range(1, max_submit_attempts + 1):
-                                context_options = {
-                                    'locale': 'zh-CN',
-                                    'timezone_id': 'Asia/Shanghai',
-                                    'viewport': {
-                                        'width': random.randint(1366, 1920),
-                                        'height': random.randint(768, 1080),
-                                    },
-                                }
-                                try:
-                                    lease, context = await create_submission_context(
-                                        browser=browser,
-                                        settings=proxy_settings,
-                                        service=proxy_service,
-                                        context_options=context_options,
-                                    )
-                                    result = await submit_one_questionnaire(
-                                        url, schema, answers, context=context, lease=lease
-                                    )
-                                    record_proxy_lease(submission, lease)
-                                    if result.get('success'):
-                                        succeeded = True
-                                        break
-                                    last_error = result.get('error', 'Unknown error')
-                                except Exception as attempt_error:
-                                    last_error = str(attempt_error)
-                                    record_proxy_lease(submission, lease)
-                                finally:
-                                    if context is not None:
-                                        await context.close()
-                                        context = None
-                                if submit_attempt < max_submit_attempts:
-                                    await asyncio.sleep(min(submit_attempt, 2))
+                            try:
+                                answers = await _previous_answers(session, task_row.id, submit_index)
+                                if answers is None:
+                                    overrides = dict(proportion_plans.get(submit_index, {}))
+                                    text_overrides = text_overrides_for_submission(text_answer_pools, submit_index)
+                                    overlap = set(overrides) & set(text_overrides)
+                                    if overlap:
+                                        raise ValueError(f"Conflicting answer overrides: {sorted(overlap)}")
+                                    overrides.update(text_overrides)
+                                    answers = generator.generate_answers(overrides)
+                                submission.generated_answers = answers
+                                succeeded = False
+                                last_error = "Unknown error"
+                                for inner_attempt in range(1, max_submit_attempts + 1):
+                                    try:
+                                        lease, context = await create_submission_context(
+                                            browser=browser, settings=proxy_settings, service=proxy_service,
+                                            context_options={
+                                                "locale": "zh-CN", "timezone_id": "Asia/Shanghai",
+                                                "viewport": {"width": random.randint(1366, 1920), "height": random.randint(768, 1080)},
+                                            },
+                                        )
+                                        result = await submit_one_questionnaire(task_row.url, schema, answers, context=context, lease=lease)
+                                        record_proxy_lease(submission, lease)
+                                        if result.get("success"):
+                                            succeeded = True
+                                            break
+                                        last_error = result.get("error", "Unknown error")
+                                    except Exception as exc:
+                                        last_error = str(exc)
+                                        record_proxy_lease(submission, lease)
+                                    finally:
+                                        if context is not None:
+                                            await context.close()
+                                            context = None
+                                    if inner_attempt < max_submit_attempts:
+                                        await asyncio.sleep(min(inner_attempt, 2))
 
-                            if succeeded:
-                                success_count += 1
-                                submission.status = "success"
-                            else:
-                                fail_count += 1
+                                if succeeded:
+                                    submission.status = "success"
+                                    success_indexes.add(submit_index)
+                                    task_row.submitted_count = len(success_indexes)
+                                    task_row.consecutive_failure_count = 0
+                                else:
+                                    submission.status = "failed"
+                                    submission.error_message = last_error
+                                    submission.failure_stage = "business_submission"
+                                    task_row.failed_count += 1
+                                    task_row.consecutive_failure_count += 1
+                            except Exception as exc:
                                 submission.status = "failed"
-                                submission.error_message = last_error
-                                submission.failure_stage = "business_submission"
+                                submission.error_message = str(exc)
+                                submission.failure_stage = "submission_execution"
+                                task_row.failed_count += 1
+                                task_row.consecutive_failure_count += 1
+                            finally:
+                                if context is not None:
+                                    await context.close()
+                                submission.finished_at = datetime.now(timezone.utc)
 
-                            submission.generated_answers = answers
+                            task_row.progress = min(100, int(task_row.submitted_count * 100 / max(task_row.total_count, 1)))
+                            task_row.heartbeat_at = datetime.now(timezone.utc)
+                            await session.commit()
 
-                        except Exception as e:
-                            record_proxy_lease(submission, lease)
-                            fail_count += 1
-                            submission.status = "failed"
-                            submission.error_message = str(e)
-                            submission.failure_stage = (
-                                "proxy_acquire_context" if lease is None and proxy_settings.enabled
-                                else "submission_execution"
-                            )
-                            if lease is None and proxy_settings.enabled:
-                                submission.proxy_requested_area = proxy_settings.default_area
-                                submission.proxy_attempts = proxy_settings.max_acquire_attempts
-                        finally:
-                            if context is not None:
-                                await context.close()
-
-                        submission.finished_at = datetime.now(timezone.utc)
-
-                        task_row.submitted_count = success_count
-                        task_row.failed_count = fail_count
-                        task_row.progress = int((i + 1) / count * 100)
-                        await session.commit()
-
-                        if submission.status == "failed":
-                            raise RuntimeError(
-                                f"Submission {i + 1} failed after {max_submit_attempts} attempts; "
-                                "later submission indexes were not consumed"
-                            )
-
-                        if i < count - 1:
-                            await asyncio.sleep(random.uniform(3, 5))
+                            if submission.status == "success":
+                                if task_row.submitted_count < task_row.total_count:
+                                    await asyncio.sleep(random.uniform(3, 5))
+                                break
+                            if task_row.consecutive_failure_count >= task_row.max_consecutive_failures:
+                                raise RuntimeError(f"Task paused after {task_row.consecutive_failure_count} consecutive failures")
+                            # Interruptible exponential backoff.
+                            for _ in range(min(5 * (2 ** min(task_row.consecutive_failure_count - 1, 3)), 60)):
+                                await asyncio.sleep(1)
+                                await session.refresh(task_row)
+                                if task_row.cancel_requested or str(task_row.execution_token) != execution_token:
+                                    cancelled = task_row.cancel_requested
+                                    break
+                            if cancelled:
+                                break
+                        if cancelled:
+                            break
                 finally:
                     if proxy_service:
                         await proxy_service.aclose()
                     await browser.close()
 
+            await _task_checkpoint(session, task_row)
             if cancelled:
                 task_row.status = "cancelled"
-            else:
+            elif task_row.submitted_count >= task_row.total_count:
                 task_row.status = "completed"
+                task_row.progress = 100
+            else:
+                task_row.status = "failed"
             task_row.finished_at = datetime.now(timezone.utc)
+            task_row.execution_token = None
             await session.commit()
-
         except asyncio.CancelledError:
             await session.rollback()
-            task_row.status = "cancelled"
-            task_row.ai_text_status = "cancelled"
-            task_row.ai_text_error = None
-            task_row.finished_at = datetime.now(timezone.utc)
-            await session.commit()
-        except Exception as e:
+            task_row = await session.get(QuestionnaireTask, task_id)
+            if task_row and str(task_row.execution_token) == execution_token:
+                task_row.status = "cancelled"
+                task_row.finished_at = datetime.now(timezone.utc)
+                task_row.execution_token = None
+                await session.commit()
+        except Exception as exc:
             await session.rollback()
-            task_row.status = "failed"
-            task_row.error_message = str(e)
-            if task_row.ai_text_enabled and task_row.ai_text_status != "ready":
-                task_row.ai_text_status = "failed"
-                task_row.ai_text_error = str(e)
-            if task_row.submit_mode == "proportional" and task_row.proportion_plan_status != "ready":
-                task_row.proportion_plan_status = "failed"
-            task_row.finished_at = datetime.now(timezone.utc)
-            await session.commit()
+            task_row = await session.get(QuestionnaireTask, task_id)
+            if task_row and str(task_row.execution_token) == execution_token:
+                task_row.status = "failed"
+                task_row.error_message = str(exc)
+                task_row.finished_at = datetime.now(timezone.utc)
+                task_row.execution_token = None
+                await session.commit()
 
 
 @router.post("/submit", response_model=DataResponse)
@@ -825,12 +850,21 @@ async def submit_questionnaire(
             request.proportion_config.model_dump()
             if request.proportion_config is not None else None
         )
-        if request.mode == "proportional":
+        enabled_ratio_configs = [
+            item for item in (proportion_config or {}).get("questions", [])
+            if item.get("enabled", True)
+        ]
+        if proportion_config is not None:
+            proportion_config["exclude_scale_questions"] = request.mode != "proportional"
+        if request.mode == "proportional" or enabled_ratio_configs:
             if task_row.detection_method != "structure":
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Proportional mode requires a task analyzed with analysis_mode=proportional",
-                )
+                # AI/high-reliability analysis may combine reliability handling
+                # for scale questions with ratios for non-scale questions.
+                if request.mode == "proportional":
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Proportional mode requires a task analyzed with analysis_mode=proportional",
+                    )
             try:
                 # Validate feasibility before the background task starts. The
                 # exact same deterministic plan is persisted by the worker.
@@ -859,17 +893,26 @@ async def submit_questionnaire(
         task_row.ai_text_model = None
         task_row.ai_text_error = None
         task_row.proportion_config = proportion_config
-        task_row.proportion_plan_status = "pending" if request.mode == "proportional" else "disabled"
+        task_row.proportion_plan_status = "pending" if enabled_ratio_configs else "disabled"
         task_row.proportion_plan_count = 0
         task_row.proportion_plan_seed = (proportion_config or {}).get("seed", 0)
         task_row.proportion_max_submit_attempts = (proportion_config or {}).get("max_submit_attempts", 10)
         apply_proxy_config(task_row, proxy_config)
         task_row.cancel_requested = False
+        task_row.submitted_count = 0
+        task_row.failed_count = 0
+        task_row.progress = 0
+        task_row.consecutive_failure_count = 0
+        task_row.execution_no = 1
+        task_row.execution_token = uuid.uuid4()
+        task_row.resume_count = 0
+        task_row.heartbeat_at = datetime.now(timezone.utc)
         await session.commit()
 
         background_tasks.add_task(
             submit_questionnaire_task,
-            request.task_id
+            request.task_id,
+            str(task_row.execution_token),
         )
 
         return DataResponse(
@@ -933,6 +976,8 @@ async def list_tasks(
         "failed": row.failed_count,
         "total": row.total_count,
         "progress": row.progress,
+        "remaining": max(row.total_count - row.submitted_count, 0),
+        "can_resume": row.status in ("cancelled", "failed") and row.submitted_count < row.total_count,
         "start_time": (row.started_at or row.created_at).isoformat(),
         "end_time": row.finished_at.isoformat() if row.finished_at else None,
         "creator_id": str(row.user_id) if row.user_id else None,
@@ -951,6 +996,137 @@ async def list_tasks(
         },
     } for row in rows]
     return DataResponse(success=True, message="Tasks retrieved", data={"items": items, "total": total or 0})
+
+
+@router.get("/tasks/{task_id}/analysis", response_model=DataResponse)
+async def get_task_analysis(
+    task_id: str,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    task = await session.scalar(
+        _task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user)
+    )
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    schema = QuestionnaireSchema.from_dict(task.analyzed_schema)
+    scale_types = {QuestionType.RATING, QuestionType.NPS, QuestionType.MATRIX}
+    display_metadata = _question_display_metadata(schema.questions)
+    questions = []
+    for question in schema.questions:
+        is_scale = question.type in scale_types or question.metadata.get("is_scale", False)
+        questions.append(QuestionResponse(
+            id=question.id,
+            type=question.type.value,
+            label=question.label,
+            options=question.options,
+            required=question.required,
+            is_scale=is_scale,
+            is_reverse=question.metadata.get("is_reverse", False),
+            reverse_confidence=question.metadata.get("reverse_confidence"),
+            detection_method=question.metadata.get("detection_method") if is_scale else None,
+            positive_values=question.metadata.get("positive_values") if is_scale else None,
+            negative_values=question.metadata.get("negative_values") if is_scale else None,
+            **_ratio_metadata(question, is_scale=is_scale, allow_scale=task.detection_method == "structure"),
+            **display_metadata[question.id],
+        ).model_dump())
+    return DataResponse(success=True, message="Task analysis retrieved", data={
+        "task_id": str(task.id), "title": task.title or "\u672a\u547d\u540d\u95ee\u5377",
+        "url": task.url, "activity_id": task.activity_id, "platform": task.platform,
+        "detection_method": task.detection_method, "total_questions": task.total_questions,
+        "scale_questions": task.scale_questions, "reverse_items": task.reverse_items or [],
+        "questions": questions,
+    })
+
+
+def _task_config_payload(task: QuestionnaireTask) -> dict:
+    """Return the persisted execution configuration in an editor-friendly shape."""
+    return {
+        "task_id": str(task.id),
+        "mode": task.submit_mode,
+        "attitude": task.attitude,
+        "add_variation": task.add_variation,
+        "variation_ratio": float(task.variation_ratio),
+        "debug": task.browser_debug,
+        "max_submit_attempts": task.submit_max_attempts,
+        "proxy": {
+            "enabled": task.proxy_enabled,
+            "provider": task.proxy_provider or "kuaidaili",
+            "area": task.proxy_area or "",
+            "carrier": task.proxy_carrier,
+            "rotate_per_submission": task.proxy_rotate_per_submission,
+            "dedup": task.proxy_dedup,
+            "verify_exit": task.proxy_verify_exit,
+            "location_match": task.proxy_location_match,
+            "required": task.proxy_required,
+            "max_acquire_attempts": task.proxy_max_acquire_attempts,
+        },
+        "ai_text": {
+            "enabled": task.ai_text_enabled,
+            "batch_size": task.ai_text_batch_size,
+            "max_generation_attempts": task.ai_text_max_attempts,
+        },
+        "proportion_config": task.proportion_config,
+    }
+
+
+@router.get("/tasks/{task_id}/config", response_model=DataResponse)
+async def get_task_config(task_id: str, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    task = await session.scalar(_task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user))
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    return DataResponse(success=True, message="Task configuration retrieved", data=_task_config_payload(task))
+
+
+@router.patch("/tasks/{task_id}/config", response_model=DataResponse)
+async def update_task_config(task_id: str, request: TaskConfigUpdate, session: AsyncSession = Depends(get_session), current_user: User = Depends(get_current_user)):
+    task = await session.scalar(_task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user))
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.status in ("pending", "processing"):
+        raise HTTPException(status_code=409, detail="请先停止任务，再修改配置")
+    data = request.model_dump(exclude_unset=True)
+    mode = data.get("mode", task.submit_mode)
+    if mode == "proportional" and data.get("proportion_config", task.proportion_config) is None:
+        raise HTTPException(status_code=422, detail="比例模式必须提供比例配置")
+    ai_text = data.get("ai_text")
+    if ai_text and ai_text.get("enabled") and not _is_admin(current_user):
+        raise HTTPException(status_code=403, detail="仅管理员可启用 AI 文本生成")
+    if ai_text and ai_text.get("enabled") and not await ai_config_manager.is_configured(session):
+        raise HTTPException(status_code=422, detail="AI 尚未配置或未启用")
+    task.submit_mode = mode
+    for source, attr in (("attitude", "attitude"), ("add_variation", "add_variation"), ("variation_ratio", "variation_ratio"), ("debug", "browser_debug"), ("max_submit_attempts", "submit_max_attempts")):
+        if source in data:
+            setattr(task, attr, data[source])
+    if "proxy" in data and data["proxy"] is not None:
+        proxy = data["proxy"]
+        if proxy.get("enabled"):
+            KuaidailiSettings.from_env().validate(require_credentials=True)
+        apply_proxy_config(task, proxy)
+    if ai_text is not None:
+        task.ai_text_enabled = ai_text["enabled"]
+        task.ai_text_batch_size = ai_text["batch_size"]
+        task.ai_text_max_attempts = ai_text["max_generation_attempts"]
+        task.ai_text_status = "pending" if ai_text["enabled"] else "disabled"
+    if "proportion_config" in data:
+        proportion = data["proportion_config"]
+        enabled = [x for x in (proportion or {}).get("questions", []) if x.get("enabled", True)]
+        if enabled:
+            try:
+                build_proportion_plan(QuestionnaireSchema.from_dict(task.analyzed_schema), proportion, task.total_count, seed=proportion.get("seed", 0))
+            except ProportionConfigError as exc:
+                raise HTTPException(status_code=422, detail=str(exc))
+        task.proportion_config = proportion
+        task.proportion_plan_status = "pending" if enabled else "disabled"
+        task.proportion_plan_count = 0
+        task.proportion_plan_seed = (proportion or {}).get("seed", 0)
+        task.proportion_max_submit_attempts = (proportion or {}).get("max_submit_attempts", 10)
+        # A persisted plan is derived from the old percentages. Remove it so
+        # the next resume deterministically rebuilds all still-needed answers.
+        await session.execute(delete(TaskProportionAnswerPlan).where(TaskProportionAnswerPlan.task_id == task.id))
+    session.add(AuditLog(user_id=current_user.id, action="task.config.update", resource_type="questionnaire_task", resource_id=str(task.id), metadata_json={"fields": list(data)}))
+    await session.commit()
+    return DataResponse(success=True, message="Task configuration saved", data=_task_config_payload(task))
 
 
 @router.delete("/tasks/{task_id}", response_model=DataResponse)
@@ -1004,6 +1180,13 @@ async def get_task_status(task_id: str, session: AsyncSession = Depends(get_sess
         failed=task_row.failed_count,
         total=task_row.total_count,
         progress=task_row.progress,
+        remaining=max(task_row.total_count - task_row.submitted_count, 0),
+        cancel_requested=task_row.cancel_requested,
+        can_resume=task_row.status in ("cancelled", "failed") and task_row.submitted_count < task_row.total_count,
+        execution_no=task_row.execution_no,
+        resume_count=task_row.resume_count,
+        consecutive_failure_count=task_row.consecutive_failure_count,
+        max_consecutive_failures=task_row.max_consecutive_failures,
         start_time=(task_row.started_at or task_row.created_at).isoformat(),
         end_time=task_row.finished_at.isoformat() if task_row.finished_at else None,
         proxy=ProxyConfig(
@@ -1091,6 +1274,66 @@ async def cancel_task(task_id: str, session: AsyncSession = Depends(get_session)
         message="Stop requested, task will stop after the current submission finishes",
         data={"task_id": str(task_row.id), "status": task_row.status}
     )
+
+
+@router.post("/submit/{task_id}/resume", response_model=DataResponse)
+async def resume_task(
+    task_id: str,
+    background_tasks: BackgroundTasks,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    task = await session.scalar(
+        _task_scope(select(QuestionnaireTask).where(QuestionnaireTask.id == task_id), current_user)
+    )
+    if task is None:
+        raise HTTPException(status_code=404, detail="Task not found")
+    if task.status not in ("cancelled", "failed"):
+        raise HTTPException(status_code=409, detail="Task is not resumable in its current status")
+    await _task_checkpoint(session, task)
+    if task.submitted_count >= task.total_count:
+        task.status = "completed"
+        task.progress = 100
+        await session.commit()
+        raise HTTPException(status_code=409, detail="Task has already reached its target")
+    if task.proxy_enabled:
+        KuaidailiSettings.from_env().validate(require_credentials=True)
+    if task.ai_text_enabled and not await ai_config_manager.is_configured(session):
+        raise HTTPException(status_code=409, detail="AI configuration is unavailable")
+
+    previous_status = task.status
+    token = uuid.uuid4()
+    # Optimistic conditional update prevents two resume requests from both winning.
+    result = await session.execute(
+        update(QuestionnaireTask)
+        .where(
+            QuestionnaireTask.id == task.id,
+            QuestionnaireTask.status == previous_status,
+            QuestionnaireTask.submitted_count < QuestionnaireTask.total_count,
+        )
+        .values(
+            status="pending", cancel_requested=False, error_message=None,
+            finished_at=None, execution_no=QuestionnaireTask.execution_no + 1,
+            execution_token=token, resume_count=QuestionnaireTask.resume_count + 1,
+            last_resumed_at=datetime.now(timezone.utc), heartbeat_at=datetime.now(timezone.utc),
+        )
+    )
+    if result.rowcount != 1:
+        await session.rollback()
+        raise HTTPException(status_code=409, detail="Task was resumed by another request")
+    session.add(AuditLog(
+        user_id=current_user.id, action="task.resume", resource_type="questionnaire_task",
+        resource_id=str(task.id), metadata_json={
+            "previous_status": previous_status, "submitted_count": task.submitted_count,
+            "total_count": task.total_count, "remaining_count": task.total_count - task.submitted_count,
+        },
+    ))
+    await session.commit()
+    background_tasks.add_task(submit_questionnaire_task, str(task.id), str(token))
+    return DataResponse(success=True, message="Task resume requested", data={
+        "task_id": str(task.id), "status": "pending", "submitted": task.submitted_count,
+        "total": task.total_count, "remaining": task.total_count - task.submitted_count,
+    })
 
 
 # ========== Reverse Item Detection API ==========

@@ -278,6 +278,13 @@ class QuestionnaireTask(Base):
     progress: Mapped[int] = mapped_column(SmallInteger, nullable=False, default=0)
     error_message: Mapped[Optional[str]] = mapped_column(Text)
     cancel_requested: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    execution_no: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    execution_token: Mapped[Optional[uuid.UUID]] = mapped_column(UUID(as_uuid=True))
+    resume_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    consecutive_failure_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    max_consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    last_resumed_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    heartbeat_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
                         # 由 /submit/{task_id}/cancel 置位；后台提交循环在每次迭代开始时
                         # 轮询该字段（session.refresh），置位后优雅停止，不强行中断进行中的提交
 
@@ -312,7 +319,7 @@ class TaskSubmission(Base):
         CheckConstraint(
             "status IN ('pending', 'success', 'failed')", name="ck_task_submissions_status"
         ),
-        UniqueConstraint("task_id", "submit_index", name="uq_task_submissions_task_index"),
+        UniqueConstraint("task_id", "submit_index", "attempt_no", name="uq_task_submissions_task_index_attempt"),
     )
 
     id: Mapped[uuid.UUID] = mapped_column(
@@ -323,6 +330,8 @@ class TaskSubmission(Base):
     )
 
     submit_index: Mapped[int] = mapped_column(Integer, nullable=False)
+    attempt_no: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    execution_no: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
     status: Mapped[str] = mapped_column(String(16), nullable=False, default="pending")
     error_message: Mapped[Optional[str]] = mapped_column(Text)
 

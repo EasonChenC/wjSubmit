@@ -215,6 +215,19 @@ class SubmitRequest(BaseModel):
         return v
 
 
+class TaskConfigUpdate(BaseModel):
+    """Editable execution settings for an existing questionnaire task."""
+    mode: Optional[Literal["random", "high_reliability", "proportional"]] = None
+    attitude: Optional[Literal["positive", "negative"]] = None
+    add_variation: Optional[bool] = None
+    variation_ratio: Optional[float] = Field(None, ge=0.01, le=0.30)
+    debug: Optional[bool] = None
+    max_submit_attempts: Optional[int] = Field(None, ge=1, le=10)
+    proxy: Optional[ProxyConfig] = None
+    ai_text: Optional[AITextAnswerConfig] = None
+    proportion_config: Optional[ProportionConfig] = None
+
+
 class SubmitResult(BaseModel):
     """单次提交结果"""
     index: int = Field(..., description="提交序号")
@@ -241,6 +254,13 @@ class TaskStatusResponse(BaseModel):
     failed: int = Field(0, description="失败数")
     total: int = Field(..., description="总数")
     progress: int = Field(0, ge=0, le=100, description="进度百分比")
+    remaining: int = 0
+    cancel_requested: bool = False
+    can_resume: bool = False
+    execution_no: int = 0
+    resume_count: int = 0
+    consecutive_failure_count: int = 0
+    max_consecutive_failures: int = 10
     start_time: str = Field(..., description="开始时间")
     end_time: Optional[str] = Field(None, description="结束时间")
     proxy: Optional[ProxyConfig] = Field(None, description="该任务持久化的代理策略")
